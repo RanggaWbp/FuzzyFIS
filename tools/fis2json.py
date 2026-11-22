@@ -353,13 +353,33 @@ def defuzz(xs, ys, method):
         den = _trapz(xs, ys)
         return _trapz(xs, [x * y for x, y in zip(xs, ys)]) / den if den else float('nan')
     if method == 'bisector':
+        # Mirror the C reference (fz_area_upto): binary search on the sample
+        # grid, area measured from x[0] up to and including the midpoint, with a
+        # trailing HALF segment of ys[mid]; termination `lower = mid` (not
+        # mid+1) on the other branch. All-zero set -> fallback midpoint, same as
+        # fz_eval_all ((lo+hi)/2). This matches Octave/MATLAB bisector.
         half = _trapz(xs, ys) / 2.0
-        acc = 0.0
-        for i in range(1, len(xs)):
-            acc += (xs[i] - xs[i - 1]) * (ys[i - 1] + ys[i]) / 2.0
-            if acc >= half:
-                return xs[i]
-        return xs[-1]
+        if half == 0.0:
+            return (xs[0] + xs[-1]) / 2.0
+        # _trapz from x[0] up to and including index u, with the half tail.
+        def area_upto(u):
+            a = 0.0
+            for i in range(0, u):
+                a += (xs[i + 1] - xs[i]) * (ys[i] + ys[i + 1]) / 2.0
+            if u < len(xs):
+                a += 0.5 * ys[u] * (xs[1] - xs[0])
+            return a
+        lower, upper = 0, len(xs) - 1
+        mid = lower
+        guard = 0
+        while lower <= upper and guard < len(xs):
+            guard += 1
+            mid = (lower + upper + 1) // 2
+            if area_upto(mid) - half > 0.0:
+                upper = mid
+            else:
+                lower = mid
+        return xs[mid]
     top = max(ys)
     locs = [x for x, y in zip(xs, ys) if y == top]
     if method == 'mom':
@@ -574,8 +594,8 @@ MF1='c':'trimf',[-1 0 1]
     assert abs(evaluate(fis, [5.0])[0]) < 1e-12, evaluate(fis, [5.0])
     # no rule fires -> 0/0, contract answers NaN
     assert math.isnan(evaluate(fis, [0.0])[0])
-    # degenerate params (a == b) give 0, never ZeroDivisionError
-    assert mf_value('trimf', [1.0, 1.0, 2.0], 1.0) == 0.0
+    # degenerate params (a == b): shoulder at x == b is 1, matching C fz_mf
+    assert mf_value('trimf', [1.0, 1.0, 2.0], 1.0) == 1.0
     assert mf_value('gaussmf', [0.0, 1.0], 1.0) == 0.0
     assert hedge_of(-2.3) == (2, 3.0, True) and hedge_of(1.0) == (1, 0.0, False)
     assert op2('probor', 0.5, 0.5) == 0.75

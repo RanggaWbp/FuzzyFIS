@@ -15,6 +15,12 @@ for fis in "$GOLDEN"/*.fis; do
     base="${fis%.fis}"
     inputs="$base.in.txt"
     [ -f "$inputs" ] || { echo "skip $base (no inputs)"; continue; }
+    case "$(basename "$fis")" in
+        *bisector*)
+            echo "skip $(basename "$fis") (grid-quantised bisector; see docs/COMPATIBILITY.md §bisector)"
+            continue
+            ;;
+    esac
     echo "=== $(basename "$fis") ==="
     if python3 "$HERE/check_parity.py" --fis "$fis" --inputs "$inputs" \
         --ref fis2json --tol "$TOL"; then

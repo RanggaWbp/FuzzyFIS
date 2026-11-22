@@ -79,6 +79,10 @@ int main(int argc, char **argv)
                           rule_pool, MAX_RULES, idx_pool, MAX_IDX,
                           lin_pool, MAX_LIN);
     if (i != 0) { fprintf(stderr, "parse error %d\n", i); return 3; }
+    if (argc >= 5) {
+        int np = atoi(argv[4]);
+        if (np > 0) fis.n_points = (uint16_t)np;
+    }
 
     while (1) {
         for (j = 0; j < n_in; j++)
@@ -120,11 +124,12 @@ def read_csv(text, n_out, what):
     return rows
 
 
-def ref_fis2json(fis_path, inp, n_out, cwd):
+def ref_fis2json(fis_path, inp, n_out, cwd, n_points):
     py = TOOLS / "fis2json.py"
     if not py.is_file():
         return None
-    cmd = [sys.executable, str(py), str(fis_path), "--eval", "-i", str(inp)]
+    cmd = [sys.executable, str(py), str(fis_path), "--eval", "-i", str(inp),
+           "-n", str(n_points)]
     p = subprocess.run(cmd, capture_output=True, text=True)
     if p.returncode != 0:
         print(f"note: fis2json.py could not evaluate, falling back:\n{p.stderr[-800:]}",
@@ -133,11 +138,11 @@ def ref_fis2json(fis_path, inp, n_out, cwd):
     return read_csv(p.stdout, n_out, "fis2json.py")
 
 
-def ref_octave(fis_path, inp, n_out, cwd):
+def ref_octave(fis_path, inp, n_out, cwd, n_points):
     csv = cwd / "ref.csv"
     runner = TOOLS / "run_oracle.sh"
     if runner.is_file():
-        cmd = [str(runner), str(fis_path), str(inp), "101", str(csv)]
+        cmd = [str(runner), str(fis_path), str(inp), str(n_points), str(csv)]
         p = subprocess.run(cmd, capture_output=True, text=True)
         if p.returncode == 0 and csv.is_file():
             return read_csv(csv.read_text(), n_out, "oracle.m")
@@ -148,7 +153,7 @@ def ref_octave(fis_path, inp, n_out, cwd):
 f = readfis('{fis_path}');
 M = dlmread('{inp}');
 for i = 1:rows(M)
-  y = evalfis(M(i,:), f, 101);
+  y = evalfis(M(i,:), f, {n_points});
   printf('%.17g,', y(1:end-1));
   printf('%.17g\\n', y(end));
 end
@@ -180,6 +185,8 @@ def main():
     ap.add_argument("--tol", type=float, default=3e-5,
                     help="err <= tol*max(1,|ref|); default 3e-5 (CONTRACT §H)")
     ap.add_argument("--ref", choices=("auto", "fis2json", "octave"), default="auto")
+    ap.add_argument("--n-points", type=int, default=101,
+                    help="grid points for both fz and reference; default 101 (FZ_MAX_POINTS)")
     ap.add_argument("--lib", default=None, help="prebuilt library instead of compiling src/*.c")
     ap.add_argument("--keep", action="store_true", help="keep harness and inputs")
     ap.add_argument("-v", "--verbose", action="store_true")
@@ -215,7 +222,8 @@ def main():
 
         in_txt = tmp / "in.txt"
         in_txt.write_text("".join(" ".join(repr(v) for v in r) + "\n" for r in rows))
-        drv = subprocess.run([str(exe), str(fis_path), str(n_in), str(n_out)],
+        drv = subprocess.run([str(exe), str(fis_path), str(n_in), str(n_out),
+                              str(a.n_points)],
                              input=in_txt.read_text(), capture_output=True, text=True)
         if drv.returncode != 0:
             sys.stderr.write(drv.stderr)
@@ -226,11 +234,11 @@ def main():
 
         ref = None
         if a.ref in ("auto", "fis2json"):
-            ref = ref_fis2json(fis_path, in_txt, n_out, tmp)
+            ref = ref_fis2json(fis_path, in_txt, n_out, tmp, a.n_points)
             if ref is None and a.ref == "fis2json":
                 raise SystemExit("fis2json.py reference unavailable")
         if ref is None:
-            ref = ref_octave(fis_path, in_txt, n_out, tmp)
+            ref = ref_octave(fis_path, in_txt, n_out, tmp, a.n_points)
         if len(ref) != len(rows):
             raise SystemExit(f"reference returned {len(ref)} rows, expected {len(rows)}")
     finally:
@@ -256,7 +264,7 @@ def main():
                 worst[j] = (ri, rows[ri], g, r)
 
     breach = 0
-    print(f"{fis_path.name}: {len(rows)} points, n_points=101, tol={a.tol:g} rel")
+    print(f"{fis_path.name}: {len(rows)} points, n_points={a.n_points}, tol={a.tol:g} rel")
     print(f"{'output':>6}  {'max_abs':>12}  {'max_rel':>12}  {'max|ref|':>12}  status")
     for j in range(n_out):
         bad = max_rel[j] > a.tol

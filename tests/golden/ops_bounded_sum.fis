@@ -1,0 +1,34 @@
+% ops_bounded_sum.fis -- covers bounded_sum (OR). Sugeno wtaver.
+[System]
+Name='ops_bounded_sum'
+Type='sugeno'
+Version=2.0
+NumInputs=2
+NumOutputs=1
+NumRules=1
+AndMethod='min'
+OrMethod='bounded_sum'
+ImpMethod='prod'
+AggMethod='sum'
+DefuzzMethod='wtaver'
+
+[Input1]
+Name='a'
+Range=[0 1]
+NumMFs=1
+MF1='hit':'trimf',[0 1 1]
+
+[Input2]
+Name='b'
+Range=[0 1]
+NumMFs=1
+MF1='hit':'trimf',[0 1 1]
+
+[Output1]
+Name='y'
+Range=[0 1]
+NumMFs=1
+MF1='out':'constant',[1]
+
+[Rules]
+1 1, 1 (1) : 2

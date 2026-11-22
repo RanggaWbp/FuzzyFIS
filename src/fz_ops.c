@@ -15,7 +15,7 @@ static float fz_pair(uint8_t op, float a, float b) {
     case FZ_OP_EINSTEIN_PRODUCT: { float d = 2.0f - (a + b - a * b); return (d == 0.0f) ? 0.0f : (a * b) / d; }
     case FZ_OP_EINSTEIN_SUM: { float d = 1.0f + a * b; return (d == 0.0f) ? 0.0f : (a + b) / d; }
     case FZ_OP_HAMACHER_PRODUCT: { float d = a + b - a * b; return (d == 0.0f) ? 0.0f : (a * b) / d; }
-    case FZ_OP_HAMACHER_SUM: { float d = 1.0f - a * b; return (d == 0.0f) ? 0.0f : (a + b - 2.0f * a * b) / d; }
+    case FZ_OP_HAMACHER_SUM: { float d = 1.0f - a * b; if (d == 0.0f) return (a == 1.0f && b == 1.0f) ? 1.0f : 0.0f; return (a + b - 2.0f * a * b) / d; }
     default: return 0.0f;
     }
 }

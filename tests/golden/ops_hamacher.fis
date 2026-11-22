@@ -1,0 +1,41 @@
+% ops_hamacher.fis -- covers hamacher_product (AND) and hamacher_sum (OR)
+% which have no end-to-end golden fixture (unit-tested only). Sugeno wtaver.
+[System]
+Name='ops_hamacher'
+Type='sugeno'
+Version=2.0
+NumInputs=2
+NumOutputs=1
+NumRules=4
+AndMethod='hamacher_product'
+OrMethod='hamacher_sum'
+ImpMethod='prod'
+AggMethod='sum'
+DefuzzMethod='wtaver'
+
+[Input1]
+Name='a'
+Range=[0 10]
+NumMFs=2
+MF1='lo':'trimf',[0 0 5]
+MF2='hi':'trimf',[5 10 10]
+
+[Input2]
+Name='b'
+Range=[0 10]
+NumMFs=2
+MF1='lo':'trimf',[0 0 5]
+MF2='hi':'trimf',[5 10 10]
+
+[Output1]
+Name='y'
+Range=[0 20]
+NumMFs=2
+MF1='small':'constant',[2]
+MF2='big':'constant',[15]
+
+[Rules]
+1 1, 1 (1) : 1
+2 2, 2 (1) : 1
+1 2, 1 (1) : 2
+2 1, 1 (1) : 2

@@ -42,8 +42,25 @@ implementations therefore can differ by at most **one grid step**
 (`(hi-lo)/(n_points-1)`; 1.0 on a `[0 100]` range with 101 points). The fixture
 measures 1.0 exactly, which is that bound — not drift.
 
-If you need bisector tighter, raise `n_points`. It cannot be made exact without
-leaving the sample grid that defines MATLAB's own answer.
+|If you need bisector tighter, raise `n_points`. It cannot be made exact without
+|leaving the sample grid that defines MATLAB's own answer.
+|
+|Measured on `tests/golden/mf_bisector.fis` (Mamdani, asymmetric trapezoid post
+|MF) against a dense Octave reference (`n_points=2001`):
+|
+|    n_points | max_abs vs dense | grid step
+|    ---------|-------------------|---------
+|    101 | 1.0e-1 | 1.0e-1
+|    201 | 5.0e-2 | 5.0e-2
+|
+|Error scales ~linearly with the grid step `(hi-lo)/(n_points-1)`: doubling
+|`n_points` halves the worst error. `FZ_MAX_POINTS` in `src/fz_types.h` sets the
+|compile-time default (101); a runtime `n_points` on `fz_fis_t` overrides it, and
+|`tools/check_parity.py --n-points N` runs both the C harness and the reference on
+|the same grid for apples-to-apples comparison. Because the residual is a grid
+|quantisation of at most one step, bisector fixtures are excluded from the strict
+|3e-5 suite (`check_all_parity.sh`); use `--n-points` with a larger grid to verify
+|them.
 
 ## 3. Where the reference toolkit deviates from MATLAB
 

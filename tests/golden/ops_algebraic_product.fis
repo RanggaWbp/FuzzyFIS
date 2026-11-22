@@ -1,0 +1,39 @@
+% ops_algebraic_product.fis -- covers algebraic_product (AND), a.k.a. prod.
+% Sugeno wtaver, so the operator path is exercised end-to-end.
+[System]
+Name='ops_algebraic_product'
+Type='sugeno'
+Version=2.0
+NumInputs=2
+NumOutputs=1
+NumRules=2
+AndMethod='algebraic_product'
+OrMethod='max'
+ImpMethod='prod'
+AggMethod='sum'
+DefuzzMethod='wtaver'
+
+[Input1]
+Name='a'
+Range=[0 1]
+NumMFs=2
+MF1='lo':'trimf',[0 0 0.5]
+MF2='hi':'trimf',[0.5 1 1]
+
+[Input2]
+Name='b'
+Range=[0 1]
+NumMFs=2
+MF1='lo':'trimf',[0 0 0.5]
+MF2='hi':'trimf',[0.5 1 1]
+
+[Output1]
+Name='y'
+Range=[0 10]
+NumMFs=2
+MF1='small':'constant',[0]
+MF2='big':'constant',[10]
+
+[Rules]
+1 1, 1 (1) : 1
+2 2, 2 (1) : 1

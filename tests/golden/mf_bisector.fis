@@ -1,0 +1,34 @@
+% mf_bisector.fis -- covers the BISECTOR defuzzifier. Mamdani.
+% Post MF is an asymmetric trapezoid whose bisector lands between grid
+% points, so the grid-quantisation error is visible and shrinks ~2x when
+% n_points doubles (101 -> 201).
+[System]
+Name='mf_bisector'
+Type='mamdani'
+Version=2.0
+NumInputs=1
+NumOutputs=1
+NumRules=2
+AndMethod='min'
+OrMethod='max'
+ImpMethod='min'
+AggMethod='max'
+DefuzzMethod='bisector'
+
+[Input1]
+Name='x'
+Range=[0 10]
+NumMFs=2
+MF1='low':'trimf',[0 0 5]
+MF2='high':'trimf',[5 10 10]
+
+[Output1]
+Name='y'
+Range=[0 10]
+NumMFs=2
+MF1='skew':'trapmf',[0 2 8 10]
+MF2='peak':'trapmf',[3 4 6 8]
+
+[Rules]
+1, 1 (1) : 1
+2, 2 (1) : 1
