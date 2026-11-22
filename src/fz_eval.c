@@ -135,9 +135,48 @@ static fz_real_t fz_eval_sugeno(const fz_fis_t *fis, const fz_real_t *in, uint16
     return (den == 0.0f) ? (ov->lo + ov->hi) * 0.5f : (num / den);
 }
 
+/* Tsukamoto: firing h → invert the monotonic consequent MF → weighted average. */
+static fz_real_t fz_eval_tsukamoto(const fz_fis_t *fis, const fz_real_t *in, uint16_t out_index) {
+    const fz_var_t *ov = &fis->out[out_index];
+    fz_real_t num = 0.0f, den = 0.0f;
+    uint16_t r;
+
+    for (r = 0; r < fis->n_rules; ++r) {
+        const fz_rule_t *rule = &fis->rules[r];
+        fz_slot_t s;
+        const fz_mf_t *mf;
+        fz_real_t h, z, a, b;
+
+        fz_slot_decode(rule->conse[out_index], &s);
+        if (s.mf_index == 0 || s.mf_index > ov->nmf) continue;
+
+        h = fz_firing(fis, rule, in);
+        if (h == 0.0f) continue;
+
+        /* Congruent with Sugeno: hedge inverts, NOT applies after. */
+        if (s.hedge != 0.0f) h = FZ_POW(h, 1.0f / s.hedge);
+        if (s.not_flag) h = 1.0f - h;
+
+        mf = &ov->mfs[s.mf_index - 1];
+        a = mf->p[0];
+        b = mf->p[1];
+        if (mf->type == FZ_MF_LINSMF)
+            z = a + h * (b - a);        /* y = (x-a)/(b-a) → x = a + h(b-a) */
+        else /* FZ_MF_LINZMF */
+            z = b - h * (b - a);        /* y = (b-x)/(b-a) → x = b - h(b-a) */
+
+        num += h * z;
+        den += h;
+    }
+
+    if (fis->defuzz_op == FZ_DEFUZZ_WTSUM) return num;
+    return (den == 0.0f) ? (ov->lo + ov->hi) * 0.5f : (num / den);
+}
+
 fz_real_t fz_eval(const fz_fis_t *fis, const fz_real_t *in, uint16_t out_index, fz_work_t *w) {
     if (!fis || !in || !w || out_index >= fis->n_out) return 0.0f;
     if (fis->type == FZ_SUGENO) return fz_eval_sugeno(fis, in, out_index);
+    if (fis->type == FZ_TSUKAMOTO) return fz_eval_tsukamoto(fis, in, out_index);
     return fz_eval_mamdani(fis, in, out_index, w);
 }
 
@@ -166,6 +205,9 @@ int fz_fis_check(const fz_fis_t *fis) {
             if (s.mf_index) {
                 const fz_mf_t *mf = &fis->out[j].mfs[s.mf_index - 1];
                 if (mf->type == FZ_MF_LINEAR && (!mf->lp || mf->nparam < fis->n_in + 1)) return 0;
+                /* Tsukamoto requires a monotonic consequent MF to invert. */
+                if (fis->type == FZ_TSUKAMOTO && mf->type != FZ_MF_LINSMF
+                    && mf->type != FZ_MF_LINZMF) return 0;
             }
         }
     }

@@ -219,8 +219,8 @@ def encode_token(tok, lineno, path):
 
 def finalize(sysd, vars_, rules, path):
     fis_type = (sysd.get("type") or "mamdani").strip().lower()
-    if fis_type not in ("mamdani", "sugeno"):
-        die("Type must be mamdani or sugeno", None, path)
+    if fis_type not in ("mamdani", "sugeno", "tsukamoto"):
+        die("Type must be mamdani, sugeno or tsukamoto", None, path)
     inputs = [v for v in vars_ if v["kind"] == "in"]
     outputs = [v for v in vars_ if v["kind"] == "out"]
     n_in, n_out = len(inputs), len(outputs)
@@ -412,8 +412,8 @@ def emit(fis, base, name_len, points, source, warnings=None):
     sysd = fis["sys"]
     and_op = OPS[(sysd.get("andmethod") or "min").strip().lower()]
     or_op = OPS[(sysd.get("ormethod") or "max").strip().lower()]
-    if fis["type"] == "sugeno":
-        # section C.5: Sugeno implication is always prod, aggregation always sum
+    if fis["type"] in ("sugeno", "tsukamoto"):
+        # Sugeno/Tsukamoto implication is always prod, aggregation always sum
         imp_op, agg_op = "FZ_OP_PROD", "FZ_OP_SUM"
         defz = DEFUZZ[(sysd.get("defuzzmethod") or "wtaver").strip().lower()]
     else:
@@ -421,14 +421,26 @@ def emit(fis, base, name_len, points, source, warnings=None):
         agg_op = OPS[(sysd.get("aggmethod") or "max").strip().lower()]
         defz = DEFUZZ[(sysd.get("defuzzmethod") or "centroid").strip().lower()]
 
+    if fis["type"] == "tsukamoto":
+        # Tsukamoto requires a monotonic consequent to invert.
+        for k, var in enumerate(fis["outputs"]):
+            for mf in var["mfs"]:
+                t = mf["type"].strip().lower()
+                if t not in ("linsmf", "linzmf"):
+                    raise FisError(
+                        "tsukamoto output %s MF '%s' must be ainsmf/linzmf (got %s)"
+                        % (k, mf.get("name", ""), mf["type"]))
+
     w("FZ_GEN_UNUSED static const fz_fis_t fz_fis_%s = {" % base)
     # src/fz_types.h carries a char[FZ_NAME_LEN] name in fz_fis_t; CONTRACT.md §B
     # does not. Set FZ_FIS_HAS_NAME=0 to build against a §B-literal header.
     w("#if FZ_FIS_HAS_NAME")
     w("    %s," % c_str(fis["name"], name_len))
     w("#endif")
-    w("    %s, %d, %d, %d," % ("FZ_SUGENO" if fis["type"] == "sugeno" else "FZ_MAMDANI",
-                              n_in, n_out, len(fis["rules"])))
+    w("    %s, %d, %d, %d," % (
+        "FZ_SUGENO" if fis["type"] == "sugeno" else
+        "FZ_TSUKAMOTO" if fis["type"] == "tsukamoto" else "FZ_MAMDANI",
+        n_in, n_out, len(fis["rules"])))
     w("    %s_in, %s_out, %s_rules," % (base, base, base))
     w("    %s, %s, %s, %s, %s, %d" % (and_op, or_op, imp_op, agg_op, defz, points))
     w("};")

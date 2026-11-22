@@ -39,7 +39,8 @@ typedef float fz_real_t;
 
 typedef enum {
     FZ_MAMDANI = 0,
-    FZ_SUGENO = 1
+    FZ_SUGENO = 1,
+    FZ_TSUKAMOTO = 2
 } fz_type_t;
 
 typedef enum {

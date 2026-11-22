@@ -18,7 +18,7 @@ same formulas (verified: same defaults 101 sample points, same operators, same M
 ## B. Static FIS model (`src/fz_types.h`, agent A owns)
 
 ```c
-typedef enum { FZ_MAMDANI = 0, FZ_SUGENO = 1 } fz_type_t;
+typedef enum { FZ_MAMDANI = 0, FZ_SUGENO = 1, FZ_TSUKAMOTO = 2 } fz_type_t;
 
 typedef enum {
     FZ_MF_TRIMF = 0, FZ_MF_TRAPMF, FZ_MF_GAUSSMF, FZ_MF_GAUSS2MF, FZ_MF_GBELLMF,
@@ -122,6 +122,14 @@ number of inputs.
    `wtaver` → `num/den`; `wtsum` → `num`. `den == 0` → NaN (MATLAB behaviour;
    oracle agent must confirm).
    Sugeno implication is always prod, aggregation always sum, regardless of file.
+6. Tsukamoto, per output j (like Sugeno, but `z` comes from the monotonic
+   consequent MF inverted at `h`): for each rule i with consequent mf index != 0:
+   `h = w`; `h = h^(1/hedge)` if hedge!=0; `h = 1-h` if not;
+   `z` = inverse of the consequent MF at `h`: `linsmf [a b]` → `a + h*(b-a)`,
+   `linzmf [a b]` → `b - h*(b-a)`; accumulate `num += h*z`, `den += h`.
+   `wtaver` → `num/den`; `wtsum` → `num`. `den == 0` → midpoint `(lo+hi)/2`.
+   Implication always prod, aggregation always sum. Consequent MF must be
+   `linsmf`/`linzmf` (validated by `fz_fis_check` and codegen).
 
 ## D. Membership functions (`src/fz_mf.c`), formulas copied from MATLAB doc
 
