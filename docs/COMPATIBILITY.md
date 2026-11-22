@@ -104,11 +104,14 @@ Measured with arduino-cli, same two examples, every supported architecture:
 
 | Board | `generated_static` (no parser) | `tipper_mamdani` (runtime parser) |
 |---|---|---|
-| `arduino:avr:uno` | 9362 B flash / 922 B RAM | parser disabled (2 KB SRAM) |
-| `arduino:avr:mega` | 9808 B | 21692 B / 2510 B of 8 KB |
+| `arduino:avr:uno` | 9338 B flash / 878 B RAM of 2048 | parser disabled (2 KB SRAM) |
+| `arduino:avr:mega` | 9784 B | 21772 B of 253952 |
 | `esp8266:esp8266:nodemcuv2` | 246360 B flash / 28944 B RAM of 80192 | 252300 B / 30576 B |
-| `esp32:esp32:esp32` | see the CI matrix (not built on this host) | parser on |
-| `STMicroelectronics:stm32:GenF4` | 20752 B / 1656 B | 26576 B / 2632 B of 128 KB |
+| `esp32:esp32:esp32` | CI only (not built on this host) | parser on |
+| `STMicroelectronics:stm32:GenF4` | 20752 B / 1656 B of 131072 | 26576 B / 2632 B |
+
+All measured with arduino-cli 1.6.0, `--library <checkout>`, no flags. Sugeno
+lands within 100 B of Mamdani on every board.
 
 The parser is switched on automatically for anything that is not a small AVR
 (`fz.h` keys off `RAMEND` on AVR, and off `ARDUINO` elsewhere, so ESP8266,
