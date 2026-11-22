@@ -41,6 +41,12 @@ HARNESS = r"""
 #include "fz.h"
 #include "fz_fis_parse.h"
 
+#ifdef FZ_USE_DOUBLE
+#  define FZ_SCANF_FMT "%lf"
+#else
+#  define FZ_SCANF_FMT "%f"
+#endif
+
 #define MAX_VARS 8
 #define MAX_MF 256
 #define MAX_RULES 512
@@ -53,14 +59,14 @@ static fz_rule_t rule_pool[MAX_RULES];
 static int16_t   idx_pool[MAX_IDX];
 static fz_work_t work;
 static char      text[65536];
-static float     lin_pool[256];
+static fz_real_t lin_pool[256];
 
 int main(int argc, char **argv)
 {
     FILE *fp;
     size_t n;
     int n_in, n_out, i, j;
-    float in[MAX_VARS], out[MAX_VARS];
+    fz_real_t in[MAX_VARS], out[MAX_VARS];
     fz_fis_t fis;
 
     if (argc < 4) { fprintf(stderr, "usage: %s fis n_in n_out\n", argv[0]); return 2; }
@@ -86,7 +92,7 @@ int main(int argc, char **argv)
 
     while (1) {
         for (j = 0; j < n_in; j++)
-            if (scanf("%f", &in[j]) != 1) return 0;
+            if (scanf(FZ_SCANF_FMT, &in[j]) != 1) return 0;
         fz_eval_all(&fis, in, out, &work);
         for (j = 0; j < n_out; j++)
             printf(j + 1 < n_out ? "%.9g," : "%.9g\n", (double)out[j]);
@@ -165,10 +171,12 @@ end
     return read_csv(p.stdout, n_out, "octave evalfis")
 
 
-def build_harness(tmp, sources, lib=None):
+def build_harness(tmp, sources, lib=None, use_double=False):
     (tmp / "harness.c").write_text(HARNESS)
-    cmd = [os.environ.get("CC", "gcc"), "-std=c11", "-O2", f"-I{SRC}",
-           str(tmp / "harness.c")]
+    cmd = [os.environ.get("CC", "gcc"), "-std=c11", "-O2", f"-I{SRC}"]
+    if use_double:
+        cmd.append("-DFZ_USE_DOUBLE")
+    cmd += [str(tmp / "harness.c")]
     cmd += [str(lib)] if lib else [str(p) for p in sources]
     cmd += ["-lm", "-o", str(tmp / "harness")]
     p = subprocess.run(cmd, capture_output=True, text=True)
@@ -188,6 +196,8 @@ def main():
     ap.add_argument("--n-points", type=int, default=101,
                     help="grid points for both fz and reference; default 101 (FZ_MAX_POINTS)")
     ap.add_argument("--lib", default=None, help="prebuilt library instead of compiling src/*.c")
+    ap.add_argument("--double", action="store_true",
+                    help="build fz with -DFZ_USE_DOUBLE (64-bit real)")
     ap.add_argument("--keep", action="store_true", help="keep harness and inputs")
     ap.add_argument("-v", "--verbose", action="store_true")
     a = ap.parse_args()
@@ -218,7 +228,7 @@ def main():
             sources = sorted(SRC.glob("*.c")) + sorted(SRC.glob("*.cpp"))
             if not sources:
                 raise SystemExit("src/ has no sources yet; nothing to compare")
-        exe = build_harness(tmp, sources, lib)
+        exe = build_harness(tmp, sources, lib, use_double=a.double)
 
         in_txt = tmp / "in.txt"
         in_txt.write_text("".join(" ".join(repr(v) for v in r) + "\n" for r in rows))

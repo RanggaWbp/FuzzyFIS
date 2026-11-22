@@ -12,23 +12,23 @@ extern "C" {
 /* Decode a rule slot (scaled x100): sign -> NOT, /100 -> MF index, %100/10 -> hedge. */
 typedef struct {
     uint16_t mf_index; /* 0 = omitted */
-    float hedge;       /* 0 = none, 0.5 = somewhat, 2 = very, ... */
+    fz_real_t hedge;       /* 0 = none, 0.5 = somewhat, 2 = very, ... */
     int not_flag;
 } fz_slot_t;
 
 void fz_slot_decode(int16_t slot, fz_slot_t *out);
 
 /* Fuzzify one input against a rule slot. */
-float fz_fuzzify(const fz_var_t *var, int16_t slot, float x);
+fz_real_t fz_fuzzify(const fz_var_t *var, int16_t slot, fz_real_t x);
 
 /* Firing strength for one rule over the supplied crisp inputs. */
-float fz_firing(const fz_fis_t *fis, const fz_rule_t *rule, const float *in);
+fz_real_t fz_firing(const fz_fis_t *fis, const fz_rule_t *rule, const fz_real_t *in);
 
 /* Evaluate one output index. `w` is caller scratch, reused per output. */
-float fz_eval(const fz_fis_t *fis, const float *in, uint16_t out_index, fz_work_t *w);
+fz_real_t fz_eval(const fz_fis_t *fis, const fz_real_t *in, uint16_t out_index, fz_work_t *w);
 
 /* Evaluate every output of the FIS into out[0..n_out-1]. */
-void fz_eval_all(const fz_fis_t *fis, const float *in, float *out, fz_work_t *w);
+void fz_eval_all(const fz_fis_t *fis, const fz_real_t *in, fz_real_t *out, fz_work_t *w);
 
 /* Non-zero when the FIS passes structural checks (indices in range, pools set). */
 int fz_fis_check(const fz_fis_t *fis);

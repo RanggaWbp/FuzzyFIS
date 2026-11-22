@@ -4,6 +4,7 @@
 #define FZ_TYPES_H
 
 #include <stdint.h>
+#include <math.h>
 
 #ifndef FZ_MAX_POINTS
 #define FZ_MAX_POINTS 101 /* MATLAB evalfisOptions.NumSamplePoints default */
@@ -18,6 +19,22 @@
  * rules; those are sized by the caller's pools. */
 #ifndef FZ_MAX_MF_PARAMS
 #define FZ_MAX_MF_PARAMS 4
+#endif
+
+/* Scalar type for all numerical values (MF params, inputs, outputs, scratch).
+ * Default is float (32-bit). Define FZ_USE_DOUBLE to build a 64-bit library.
+ * 64-bit requires hardware double on the MCU (ESP32, Cortex-M4F/FPU, ...).
+ * On AVR (software float64) it is very slow — keep the float default there. */
+#ifdef FZ_USE_DOUBLE
+typedef double fz_real_t;
+#define FZ_EXP(x)   exp(x)
+#define FZ_POW(a,b) pow(a, b)
+#define FZ_FABS(x)  fabs(x)
+#else
+typedef float fz_real_t;
+#define FZ_EXP(x)   expf(x)
+#define FZ_POW(a,b) powf(a, b)
+#define FZ_FABS(x)  fabsf(x)
 #endif
 
 typedef enum {
@@ -49,17 +66,17 @@ typedef enum {
 typedef struct {
     uint8_t type;   /* fz_mf_type_t */
     uint8_t nparam;
-    float p[FZ_MAX_MF_PARAMS];
+    fz_real_t p[FZ_MAX_MF_PARAMS];
     /* Sugeno `linear` only: coefficients [a1 .. an c], nparam of them, pointing
      * at caller-owned storage. This is how a linear consequent gets an
      * arbitrary number of inputs without a compile-time cap. NULL for every
      * other MF type. */
-    const float *lp;
+    const fz_real_t *lp;
 } fz_mf_t;
 
 typedef struct {
     char name[FZ_NAME_LEN];
-    float lo, hi;
+    fz_real_t lo, hi;
     uint16_t nmf;
     const fz_mf_t *mfs;
 } fz_var_t;
@@ -67,7 +84,7 @@ typedef struct {
 typedef struct {
     uint16_t n;     /* number of input slots in `ante` (== n_in of the FIS) */
     uint8_t conn;   /* 1 = AND, 2 = OR */
-    float weight;
+    fz_real_t weight;
     const int16_t *ante;   /* 0 omitted | sign = NOT | 2-digit fraction = hedge x0.1 */
     const int16_t *conse;  /* one slot per output */
 } fz_rule_t;
@@ -85,7 +102,7 @@ typedef struct {
 
 /* Caller-owned scratch: one output's aggregated set. Never heap-allocated. */
 typedef struct {
-    float buf[FZ_MAX_POINTS];
+    fz_real_t buf[FZ_MAX_POINTS];
 } fz_work_t;
 
 /* Pool sizes needed for a parsed FIS. */

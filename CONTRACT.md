@@ -9,7 +9,8 @@ same formulas (verified: same defaults 101 sample points, same operators, same M
 ## A. Rules of engagement
 
 - Deterministic output. No dynamic allocation in evaluation. No exceptions. No RTTI.
-- `float` throughout (MATLAB uses double; parity criterion is explained in §J).
+- `fz_real_t` throughout (default `float`; define `FZ_USE_DOUBLE` for 64-bit `double`).
+  MATLAB computes in `double`; parity criterion is explained in §J.
 - C++11 for library, C99-compatible headers where noted. Works on AVR (2 KB RAM),
   ESP32, STM32, and host.
 - Every numeric constant from the contract is copied verbatim, not re-derived.
@@ -43,14 +44,14 @@ typedef enum {
 typedef struct {
     uint8_t type;                 /* fz_mf_type_t */
     uint8_t nparam;
-    float p[FZ_MAX_MF_PARAMS];    /* longest standard MF list is 4 */
-    const float *lp;              /* `linear` only: [a1..an c], caller-owned */
+    fz_real_t p[FZ_MAX_MF_PARAMS]; /* longest standard MF list is 4 */
+    const fz_real_t *lp;          /* `linear` only: [a1..an c], caller-owned */
 } fz_mf_t;
 
-typedef struct { char name[FZ_NAME_LEN]; float lo, hi; uint16_t nmf;
+typedef struct { char name[FZ_NAME_LEN]; fz_real_t lo, hi; uint16_t nmf;
                  const fz_mf_t *mfs; } fz_var_t;
 
-typedef struct { uint16_t n; uint8_t conn; /*1=AND,2=OR*/ float weight;
+typedef struct { uint16_t n; uint8_t conn; /*1=AND,2=OR*/ fz_real_t weight;
                  const int16_t *ante;  /* SCALED x100: 0=omitted, sign=NOT, last 2 digits = hedge */
                  const int16_t *conse; } fz_rule_t;
 /* Slot encoding (int16, token scaled by 100):
@@ -74,15 +75,15 @@ typedef struct { char name[FZ_NAME_LEN]; fz_type_t type;
                  uint16_t n_points; /* 0 -> FZ_MAX_POINTS */
                } fz_fis_t;
 
-typedef struct { float buf[FZ_MAX_POINTS]; } fz_work_t; /* caller-owned */
+typedef struct { fz_real_t buf[FZ_MAX_POINTS]; } fz_work_t; /* caller-owned */
 
 typedef struct { uint16_t n_mf, n_rule, n_idx, n_ante, n_conse;
                  uint16_t n_in, n_out;
-                 uint16_t n_lin;   /* floats for `linear` coefficients */
+                 uint16_t n_lin;   /* fz_real_t for `linear` coefficients */
                } fz_pool_size_t;
 ```
-float fz_eval(const fz_fis_t *fis, const float *in, uint8_t out_index, fz_work_t *w);
-void  fz_eval_all(const fz_fis_t *fis, const float *in, float *out, fz_work_t *w);
+fz_real_t fz_eval(const fz_fis_t *fis, const fz_real_t *in, uint8_t out_index, fz_work_t *w);
+void  fz_eval_all(const fz_fis_t *fis, const fz_real_t *in, fz_real_t *out, fz_work_t *w);
 ```
 
 `FZ_MAX_POINTS` default 101, overridable by `-DFZ_MAX_POINTS=n`.

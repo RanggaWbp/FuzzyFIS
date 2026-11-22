@@ -15,11 +15,11 @@ void fz_slot_decode(int16_t slot, fz_slot_t *out) {
     if (mag < 0) { out->not_flag = 1; mag = (int16_t)(-mag); }
     out->mf_index = (uint16_t)(mag / 100);
     /* CONTRACT §B: stored scaled by 100; exponent = (mag % 100) / 10, so .2 is "very". */
-    out->hedge = (float)(mag % 100) / 10.0f;
+    out->hedge = (fz_real_t)(mag % 100) / 10.0f;
     if (out->mf_index == 0) out->hedge = 0.0f;
 }
 
-float fz_fuzzify(const fz_var_t *var, int16_t slot, float x) {
+fz_real_t fz_fuzzify(const fz_var_t *var, int16_t slot, fz_real_t x) {
     fz_slot_t s;
     fz_slot_decode(slot, &s);
     if (s.mf_index == 0 || var == 0 || var->mfs == 0) return 0.0f;
@@ -31,14 +31,14 @@ float fz_fuzzify(const fz_var_t *var, int16_t slot, float x) {
 }
 
 /* Fold the participating antecedent values left-to-right, no storage. */
-static float fz_fold_antecedent(const fz_fis_t *fis, const fz_rule_t *rule,
-                                const float *in, uint8_t op) {
+static fz_real_t fz_fold_antecedent(const fz_fis_t *fis, const fz_rule_t *rule,
+                                const fz_real_t *in, uint8_t op) {
     uint16_t i;
-    float acc = 0.0f;
+    fz_real_t acc = 0.0f;
     int have = 0;
 
     for (i = 0; i < rule->n && i < fis->n_in; ++i) {
-        float v;
+        fz_real_t v;
         if (rule->ante[i] == 0) continue; /* variable omitted from the rule */
         v = fz_fuzzify(&fis->in[i], rule->ante[i], in[i]);
         if (!have) { acc = v; have = 1; }
@@ -47,7 +47,7 @@ static float fz_fold_antecedent(const fz_fis_t *fis, const fz_rule_t *rule,
     return have ? acc : 0.0f;
 }
 
-float fz_firing(const fz_fis_t *fis, const fz_rule_t *rule, const float *in) {
+fz_real_t fz_firing(const fz_fis_t *fis, const fz_rule_t *rule, const fz_real_t *in) {
     uint8_t op;
     if (!fis || !rule || !in || rule->n > fis->n_in) return 0.0f;
     op = (rule->conn == 1) ? fis->and_op : fis->or_op;
@@ -55,12 +55,12 @@ float fz_firing(const fz_fis_t *fis, const fz_rule_t *rule, const float *in) {
 }
 
 /* Mamdani: build the aggregated set for output `out_index` and defuzzify it. */
-static float fz_eval_mamdani(const fz_fis_t *fis, const float *in, uint16_t out_index, fz_work_t *w) {
+static fz_real_t fz_eval_mamdani(const fz_fis_t *fis, const fz_real_t *in, uint16_t out_index, fz_work_t *w) {
     const fz_var_t *ov = &fis->out[out_index];
     uint16_t np = fz_npoints(fis);
     uint16_t k;
     uint16_t r;
-    const float step = (np <= 1) ? 0.0f : (ov->hi - ov->lo) / (float)(np - 1);
+    const fz_real_t step = (np <= 1) ? 0.0f : (ov->hi - ov->lo) / (fz_real_t)(np - 1);
 
     for (k = 0; k < np; ++k) w->buf[k] = 0.0f;
 
@@ -68,7 +68,7 @@ static float fz_eval_mamdani(const fz_fis_t *fis, const float *in, uint16_t out_
         const fz_rule_t *rule = &fis->rules[r];
         fz_slot_t s;
         const fz_mf_t *mf;
-        float strength;
+        fz_real_t strength;
 
         fz_slot_decode(rule->conse[out_index], &s);
         if (s.mf_index == 0 || s.mf_index > ov->nmf) continue;
@@ -78,8 +78,8 @@ static float fz_eval_mamdani(const fz_fis_t *fis, const float *in, uint16_t out_
 
         mf = &ov->mfs[s.mf_index - 1];
         for (k = 0; k < np; ++k) {
-            float x = ov->lo + (float)k * step;
-            float y = fz_mf_eval(mf->type, mf->p, x, s.hedge, s.not_flag);
+            fz_real_t x = ov->lo + (fz_real_t)k * step;
+            fz_real_t y = fz_mf_eval(mf->type, mf->p, x, s.hedge, s.not_flag);
             y = fz_op2(fis->imp_op, strength, y);          /* min | prod */
             w->buf[k] = fz_op2(fis->agg_op, w->buf[k], y); /* max | sum | probor */
         }
@@ -90,16 +90,16 @@ static float fz_eval_mamdani(const fz_fis_t *fis, const float *in, uint16_t out_
 }
 
 /* Sugeno: singleton (location, height) per rule, then weighted average/sum. */
-static float fz_eval_sugeno(const fz_fis_t *fis, const float *in, uint16_t out_index) {
+static fz_real_t fz_eval_sugeno(const fz_fis_t *fis, const fz_real_t *in, uint16_t out_index) {
     const fz_var_t *ov = &fis->out[out_index];
-    float num = 0.0f, den = 0.0f;
+    fz_real_t num = 0.0f, den = 0.0f;
     uint16_t r;
 
     for (r = 0; r < fis->n_rules; ++r) {
         const fz_rule_t *rule = &fis->rules[r];
         fz_slot_t s;
         const fz_mf_t *mf;
-        float h, z;
+        fz_real_t h, z;
 
         fz_slot_decode(rule->conse[out_index], &s);
         if (s.mf_index == 0 || s.mf_index > ov->nmf) continue;
@@ -108,14 +108,14 @@ static float fz_eval_sugeno(const fz_fis_t *fis, const float *in, uint16_t out_i
         if (h == 0.0f) continue;
 
         /* Congruent with the reference: hedge inverts for Sugeno, NOT applies after. */
-        if (s.hedge != 0.0f) h = powf(h, 1.0f / s.hedge);
+        if (s.hedge != 0.0f) h = FZ_POW(h, 1.0f / s.hedge);
         if (s.not_flag) h = 1.0f - h;
 
         mf = &ov->mfs[s.mf_index - 1];
         if (mf->type == FZ_MF_LINEAR) {
             /* coefficients [a1..an c] over [in1..inn 1]; the count is nparam, so
              * the input count is bounded by the FIS, not by this library. */
-            const float *c = mf->lp;
+            const fz_real_t *c = mf->lp;
             uint16_t i, n;
             if (!c) continue;
             n = mf->nparam;
@@ -135,13 +135,13 @@ static float fz_eval_sugeno(const fz_fis_t *fis, const float *in, uint16_t out_i
     return (den == 0.0f) ? (ov->lo + ov->hi) * 0.5f : (num / den);
 }
 
-float fz_eval(const fz_fis_t *fis, const float *in, uint16_t out_index, fz_work_t *w) {
+fz_real_t fz_eval(const fz_fis_t *fis, const fz_real_t *in, uint16_t out_index, fz_work_t *w) {
     if (!fis || !in || !w || out_index >= fis->n_out) return 0.0f;
     if (fis->type == FZ_SUGENO) return fz_eval_sugeno(fis, in, out_index);
     return fz_eval_mamdani(fis, in, out_index, w);
 }
 
-void fz_eval_all(const fz_fis_t *fis, const float *in, float *out, fz_work_t *w) {
+void fz_eval_all(const fz_fis_t *fis, const fz_real_t *in, fz_real_t *out, fz_work_t *w) {
     uint16_t j;
     if (!fis || !out) return;
     for (j = 0; j < fis->n_out; ++j) out[j] = fz_eval(fis, in, j, w);

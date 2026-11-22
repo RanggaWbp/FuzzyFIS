@@ -25,9 +25,10 @@ inspiration: same 13 membership functions, same operators, same fold order, same
 sample grid, same defaults.
 
 **Measured, not claimed:** the worst relative difference against a
-MATLAB-compatible oracle across 14 reference systems is **1.4 × 10⁻⁶** — float32
-rounding, nothing else. The full table is in
-[`docs/COMPATIBILITY.md`](docs/COMPATIBILITY.md).
+MATLAB-compatible oracle across 20 reference systems is **1.37 × 10⁻⁶** (float32
+build) — float32 rounding, nothing else. Build with `-DFZ_USE_DOUBLE` for a
+64-bit `double` build whose worst error drops to **4.74 × 10⁻⁹**. The full table
+is in [`docs/COMPATIBILITY.md`](docs/COMPATIBILITY.md).
 
 ---
 
@@ -41,7 +42,8 @@ rounding, nothing else. The full table is in
 | **Operators** | AND/OR: `min` `max` `prod` `probor` `sum` `algebraic_*` `bounded_sum` `einstein_*` `hamacher_*`<br>Implication: `min` `prod`<br>Aggregation: `max` `sum` `probor` |
 | **Rules** | weights, `NOT` (negative index), hedges (`somewhat` `very` `extremely` `very very`), per-rule AND/OR |
 | **Structure** | any number of inputs, outputs, membership functions, rules |
-| **Memory** | no `malloc`, no `new`, no `std::` — one 404-byte work buffer |
+| **Memory** | no `malloc`, no `new`, no `std::` — one 404-byte work buffer (float32) |
+| **Precision** | `float32` default; build with `-DFZ_USE_DOUBLE` for 64-bit `double` (needs hardware double on MCU: ESP32, Cortex-M4F/FPU) |
 | **Platforms** | AVR, ESP8266, ESP32, STM32, and anything with a C99 compiler |
 
 ### Footprint, measured with `arduino-cli`
@@ -274,6 +276,7 @@ examples/         generated_static, tipper_mamdani, tipper_sugeno
 tools/            fis2h.py, fis2json.py, check_parity.py, oracle.m, patch-oracle.sh
 tests/golden/     14 reference systems + oracle output
 tests/host/       6 test binaries, `make -C tests/host run`
+tests/stm32f103/  Cortex-M3 cross-compile gate, `make -C tests/stm32f103 run`
 docs/             COMPATIBILITY.md, MATLAB-VERIFY.md
 CONTRACT.md       the normative spec the implementation is written against
 ```
@@ -286,6 +289,8 @@ The host suite needs only a C compiler:
 
 ```sh
 make -C tests/host run          # 18 checks, no framework, no network
+make -C tests/stm32f103 run     # cross-compile gate: Cortex-M3 ELF + size
+make -C tests/stm32f103 run FZ_DOUBLE=1   # same, 64-bit fz_real_t build
 ```
 
 Memory safety:

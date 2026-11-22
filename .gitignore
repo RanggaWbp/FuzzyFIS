@@ -1,5 +1,7 @@
 *.o
 *.bin
+*.elf
 tests/host/build/
+tests/stm32f103/build/
 tools/__pycache__/
 __pycache__/

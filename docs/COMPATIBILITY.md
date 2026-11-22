@@ -27,12 +27,14 @@ Grid = 11 points per input over each variable's range.
 | `mf-sigmoid` | Mamdani centroid | 1/1 | 187 | 6.1e-5 | 1.4e-6 |
 | `edge_hedges` | Mamdani bisector | 2/1/3 | 121 | 1.0e0 | 2.2e-2 |
 
-**Worst relative error across everything except bisector: 1.4e-6.**
+**Worst relative error across everything except bisector: 1.4e-6** (float32 build).
 Tolerance used by the test suite: 3e-5 relative
 (`|got - ref| <= 3e-5 * max(1, |ref|)`), i.e. a ~20× margin.
 
-The library computes in `float`, MATLAB in `double`. That is the entire source of
-the residual: same formulas, same grid, same fold order.
+The library computes by default in `float` (`fz_real_t`), MATLAB in `double`. That
+is the entire source of the residual: same formulas, same grid, same fold order.
+Build with `-DFZ_USE_DOUBLE` to switch `fz_real_t` to `double`; the worst relative
+error then drops to ~4.7e-9 (machine-precision rounding).
 
 ## 2. Bisector is grid-quantised, by construction
 
@@ -160,6 +162,20 @@ Measured with arduino-cli, same two examples, every supported architecture:
 All measured with arduino-cli 1.6.0, `--library <checkout>`, no flags. Sugeno
 lands within 100 B of Mamdani on every board — the two share the evaluator and
 differ only in the consequence step.
+
+**Cortex-M3 (STM32F103) cross-compile gate** — `make -C tests/stm32f103 run`
+links the full evaluator (+ parser) against newlib-nano/rdimon with
+`-mcpu=cortex-m3 -mthumb` (soft-float, no FPU). Measured `arm-none-eabi-size`:
+
+| Build | flash (.text) | RAM (.data+.bss) |
+|---|---|---|
+| float32 default | 13.6 KB | 1.5 KB |
+| `FZ_DOUBLE=1` (software double) | 17.5 KB | 1.9 KB |
+
+The `S` binary (float32) is the obvious choice for the 64 KB flash / 20 KB SRAM
+of the STM32F103; double costs ~29% more flash and only makes sense when a
+hardware-FPU sibling (Cortex-M4F) is the real target. `FZ_DOUBLE=1` builds the
+64-bit `fz_real_t` here as a pure portability check.
 
 On `arduino:avr:uno` the runtime examples build the 1542 B "parser disabled"
 stub rather than the FIS, so their size is not a library measurement. Use the

@@ -9,10 +9,10 @@ extern "C" {
 #endif
 
 /* Fold `v[0..n-1]` left-to-right with operator `op`. n == 0 returns 0. */
-float fz_op_fold(uint8_t op, const float *v, uint8_t n);
+fz_real_t fz_op_fold(uint8_t op, const fz_real_t *v, uint8_t n);
 
 /* Single pair, used by implication and aggregation. */
-float fz_op2(uint8_t op, float a, float b);
+fz_real_t fz_op2(uint8_t op, fz_real_t a, fz_real_t b);
 
 /* Parse a method name ("min", "probor", ...) to its id. -1 when unknown. */
 int fz_op_from_name(const char *name);

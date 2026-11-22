@@ -65,7 +65,7 @@ static int read_int(const char **pp, long *out) {
     return 1;
 }
 
-static int read_float(const char **pp, float *out) {
+static int read_float(const char **pp, fz_real_t *out) {
     const char *p = skip_blanks(*pp);
     int neg = 0, any = 0;
     double v = 0.0, scale = 0.1;
@@ -86,19 +86,19 @@ static int read_float(const char **pp, float *out) {
         else while (e--) v = eneg ? v / 10.0 : v * 10.0;
     }
     if (!any) return 0;
-    *out = (float)(neg ? -v : v);
+    *out = (fz_real_t)(neg ? -v : v);
     *pp = p;
     return 1;
 }
 
 /* Parse `[a b c]` into p[]; returns the count, -1 on syntax error. */
-static int read_vector(const char **pp, float *p, int max) {
+static int read_vector(const char **pp, fz_real_t *p, int max) {
     const char *q = skip_blanks(*pp);
     int n = 0;
     if (*q != '[') return -1;
     ++q;
     for (;;) {
-        float v;
+        fz_real_t v;
         q = skip_blanks(q);
         if (*q == ']') { ++q; break; }
         if (*q == ',' || is_space(*q)) { ++q; continue; }
@@ -168,7 +168,7 @@ static uint16_t count_floats(const char *p, const char *eol) {
     if (q >= eol) return 0;
     ++q;
     for (;;) {
-        float v;
+        fz_real_t v;
         while (q < eol && (*q == ' ' || *q == ',')) ++q;
         if (q >= eol || *q == ']') break;
         if (!read_float(&q, &v)) break;
@@ -236,7 +236,7 @@ typedef struct {
     uint16_t n_rule, i_rule;
     int16_t *idx;
     uint16_t n_idx, i_idx;
-    float *lin;              /* `linear` consequent coefficients, any length */
+    fz_real_t *lin;              /* `linear` consequent coefficients, any length */
     uint16_t n_lin, i_lin;
 } ctx_t;
 
@@ -278,7 +278,7 @@ static int parse_variable(ctx_t *c, const char **pp, int is_out) {
                 copy_token(val, v->name, FZ_NAME_LEN);
             } else if (val && name_eq(key, "Range")) {
                 const char *r = val;
-                float lo, hi;
+                fz_real_t lo, hi;
                 if (*r == '[') ++r;
                 if (!read_float(&r, &lo)) return FZ_ERR_KEY;
                 if (!read_float(&r, &hi)) return FZ_ERR_KEY;
@@ -329,12 +329,12 @@ static int parse_variable(ctx_t *c, const char **pp, int is_out) {
                     if (mf->type == FZ_MF_LINEAR) {
                         /* A linear consequent is [a1 .. an c]: its length is the
                          * number of inputs plus one, so it cannot live in the
-                         * fixed p[] and must not be capped. Read into the float
+                         * fixed p[] and must not be capped. Read into the fz_real_t
                          * pool. */
                         uint16_t start = c->i_lin;
                         if (*r == '[') ++r;   /* consume the opening bracket */
                         for (;;) {
-                            float v;
+                            fz_real_t v;
                             while (*r && (*r == ' ' || *r == ',')) ++r;
                             if (*r == ']' || *r == 0) { if (*r == ']') ++r; break; }
                             if (!read_float(&r, &v)) return FZ_ERR_KEY;
@@ -405,7 +405,7 @@ static int parse_rules(ctx_t *c, const char **pp) {
 
             q = skip_blanks(q);
             if (*q == '(') {
-                float w;
+                fz_real_t w;
                 ++q;
                 if (read_float(&q, &w)) r->weight = w;
                 while (*q && *q != ')') ++q;
@@ -431,7 +431,7 @@ int fz_fis_parse_text(const char *text, size_t text_len, fz_fis_t *out,
                       fz_var_t *out_pool, uint16_t n_out_pool,
                       fz_rule_t *rule_pool, uint16_t n_rule_pool,
                       int16_t *idx_pool, uint16_t n_idx,
-                      float *lin_pool, uint16_t n_lin) {
+                      fz_real_t *lin_pool, uint16_t n_lin) {
     ctx_t c;
     const char *p;
     fz_pool_size_t need;
@@ -569,7 +569,7 @@ int fz_fis_parse_file(const char *path, char *buf, unsigned buf_len,
                       fz_var_t *out_pool, uint16_t n_out_pool,
                       fz_rule_t *rule_pool, uint16_t n_rule_pool,
                       int16_t *idx_pool, uint16_t n_idx,
-                      float *lin_pool, uint16_t n_lin) {
+                      fz_real_t *lin_pool, uint16_t n_lin) {
     FILE *f;
     size_t n;
     if (!path || !buf || buf_len == 0) return FZ_ERR_ARG;

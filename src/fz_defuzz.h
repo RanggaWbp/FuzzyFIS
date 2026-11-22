@@ -12,7 +12,7 @@ extern "C" {
 
 /* `ys` holds n membership samples over [lo, hi]. `fallback` is returned when the
  * area is zero (MATLAB returns the midpoint of the output range). */
-float fz_defuzz(uint8_t method, float lo, float hi, const float *ys, uint16_t n, float fallback);
+fz_real_t fz_defuzz(uint8_t method, fz_real_t lo, fz_real_t hi, const fz_real_t *ys, uint16_t n, fz_real_t fallback);
 
 #ifdef __cplusplus
 }

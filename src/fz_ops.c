@@ -2,7 +2,7 @@
 #include "fz_ops.h"
 #include <string.h>
 
-static float fz_pair(uint8_t op, float a, float b) {
+static fz_real_t fz_pair(uint8_t op, fz_real_t a, fz_real_t b) {
     switch (op) {
     case FZ_OP_MIN: return (a < b) ? a : b;
     case FZ_OP_MAX: return (a > b) ? a : b;
@@ -11,20 +11,20 @@ static float fz_pair(uint8_t op, float a, float b) {
     case FZ_OP_SUM: return a + b;
     case FZ_OP_PROBOR:
     case FZ_OP_ALGEBRAIC_SUM: return a + b - a * b;
-    case FZ_OP_BOUNDED_SUM: { float s = a + b; return (s > 1.0f) ? 1.0f : s; }
-    case FZ_OP_EINSTEIN_PRODUCT: { float d = 2.0f - (a + b - a * b); return (d == 0.0f) ? 0.0f : (a * b) / d; }
-    case FZ_OP_EINSTEIN_SUM: { float d = 1.0f + a * b; return (d == 0.0f) ? 0.0f : (a + b) / d; }
-    case FZ_OP_HAMACHER_PRODUCT: { float d = a + b - a * b; return (d == 0.0f) ? 0.0f : (a * b) / d; }
-    case FZ_OP_HAMACHER_SUM: { float d = 1.0f - a * b; if (d == 0.0f) return (a == 1.0f && b == 1.0f) ? 1.0f : 0.0f; return (a + b - 2.0f * a * b) / d; }
+    case FZ_OP_BOUNDED_SUM: { fz_real_t s = a + b; return (s > 1.0f) ? 1.0f : s; }
+    case FZ_OP_EINSTEIN_PRODUCT: { fz_real_t d = 2.0f - (a + b - a * b); return (d == 0.0f) ? 0.0f : (a * b) / d; }
+    case FZ_OP_EINSTEIN_SUM: { fz_real_t d = 1.0f + a * b; return (d == 0.0f) ? 0.0f : (a + b) / d; }
+    case FZ_OP_HAMACHER_PRODUCT: { fz_real_t d = a + b - a * b; return (d == 0.0f) ? 0.0f : (a * b) / d; }
+    case FZ_OP_HAMACHER_SUM: { fz_real_t d = 1.0f - a * b; if (d == 0.0f) return (a == 1.0f && b == 1.0f) ? 1.0f : 0.0f; return (a + b - 2.0f * a * b) / d; }
     default: return 0.0f;
     }
 }
 
-float fz_op2(uint8_t op, float a, float b) { return fz_pair(op, a, b); }
+fz_real_t fz_op2(uint8_t op, fz_real_t a, fz_real_t b) { return fz_pair(op, a, b); }
 
-float fz_op_fold(uint8_t op, const float *v, uint8_t n) {
+fz_real_t fz_op_fold(uint8_t op, const fz_real_t *v, uint8_t n) {
     uint8_t i;
-    float acc;
+    fz_real_t acc;
     if (n == 0) return 0.0f;
     acc = v[0];
     for (i = 1; i < n; ++i) acc = fz_pair(op, acc, v[i]);

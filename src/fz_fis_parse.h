@@ -35,7 +35,7 @@ int fz_fis_parse_text(const char *text, size_t text_len, fz_fis_t *out,
                       fz_var_t *out_pool, uint16_t n_out,
                       fz_rule_t *rule_pool, uint16_t n_rule,
                       int16_t *idx_pool, uint16_t n_idx,
-                      float *lin_pool, uint16_t n_lin);
+                      fz_real_t *lin_pool, uint16_t n_lin);
 
 #ifndef ARDUINO
 /* Host convenience: read a file into memory, then parse. `buf` is caller-owned. */
@@ -46,7 +46,7 @@ int fz_fis_parse_file(const char *path, char *buf, unsigned buf_len,
                       fz_var_t *out_pool, uint16_t n_out,
                       fz_rule_t *rule_pool, uint16_t n_rule,
                       int16_t *idx_pool, uint16_t n_idx,
-                      float *lin_pool, uint16_t n_lin);
+                      fz_real_t *lin_pool, uint16_t n_lin);
 #endif
 
 #ifdef __cplusplus

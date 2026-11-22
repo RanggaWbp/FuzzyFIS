@@ -3,19 +3,19 @@
 
 /* Grid point k. The step is hoisted by the callers that walk the whole range;
  * this helper stays for the random-access cases (mom/som/lom). */
-static float fz_step(float lo, float hi, uint16_t n) {
-    return (n <= 1) ? 0.0f : (hi - lo) / (float)(n - 1);
+static fz_real_t fz_step(fz_real_t lo, fz_real_t hi, uint16_t n) {
+    return (n <= 1) ? 0.0f : (hi - lo) / (fz_real_t)(n - 1);
 }
 
-static float fz_x(float lo, float hi, uint16_t k, uint16_t n) {
-    return lo + (float)k * fz_step(lo, hi, n);
+static fz_real_t fz_x(fz_real_t lo, fz_real_t hi, uint16_t k, uint16_t n) {
+    return lo + (fz_real_t)k * fz_step(lo, hi, n);
 }
 
 /* Trapezoid area of ys over [lo, hi], from index 0..upto (exclusive). */
-static float fz_area(const float *ys, float lo, float hi, uint16_t n, uint16_t upto) {
+static fz_real_t fz_area(const fz_real_t *ys, fz_real_t lo, fz_real_t hi, uint16_t n, uint16_t upto) {
     uint16_t k;
-    float area = 0.0f;
-    float dx = (n <= 1) ? 0.0f : (hi - lo) / (float)(n - 1);
+    fz_real_t area = 0.0f;
+    fz_real_t dx = (n <= 1) ? 0.0f : (hi - lo) / (fz_real_t)(n - 1);
     for (k = 0; k + 1 < upto; ++k) area += 0.5f * (ys[k] + ys[k + 1]) * dx;
     return area;
 }
@@ -24,16 +24,16 @@ static float fz_area(const float *ys, float lo, float hi, uint16_t n, uint16_t u
  * the reference computes it: trapz over x[0..upto] with everything beyond
  * zeroed, which contributes a trailing HALF segment of ys[upto]. Omitting that
  * half step shifts the bisector by one grid point. */
-static float fz_area_upto(const float *ys, float lo, float hi, uint16_t n, uint16_t upto) {
+static fz_real_t fz_area_upto(const fz_real_t *ys, fz_real_t lo, fz_real_t hi, uint16_t n, uint16_t upto) {
     uint16_t k;
-    float area = 0.0f;
-    float dx = (n <= 1) ? 0.0f : (hi - lo) / (float)(n - 1);
+    fz_real_t area = 0.0f;
+    fz_real_t dx = (n <= 1) ? 0.0f : (hi - lo) / (fz_real_t)(n - 1);
     for (k = 0; k + 1 <= upto && k + 1 < n; ++k) area += 0.5f * (ys[k] + ys[k + 1]) * dx;
     if (upto < n) area += 0.5f * ys[upto] * dx;
     return area;
 }
 
-float fz_defuzz(uint8_t method, float lo, float hi, const float *ys, uint16_t n, float fallback) {
+fz_real_t fz_defuzz(uint8_t method, fz_real_t lo, fz_real_t hi, const fz_real_t *ys, uint16_t n, fz_real_t fallback) {
     uint16_t i;
 
     if (n == 0 || !ys) return fallback;
@@ -41,10 +41,10 @@ float fz_defuzz(uint8_t method, float lo, float hi, const float *ys, uint16_t n,
     switch (method) {
     case FZ_DEFUZZ_CENTROID:
     case FZ_DEFUZZ_WTAVER: {
-        float sw = 0.0f, swx = 0.0f;
-        const float step = fz_step(lo, hi, n);
+        fz_real_t sw = 0.0f, swx = 0.0f;
+        const fz_real_t step = fz_step(lo, hi, n);
         for (i = 0; i < n; ++i) {
-            float x = lo + (float)i * step;
+            fz_real_t x = lo + (fz_real_t)i * step;
             sw += ys[i];
             swx += ys[i] * x;
         }
@@ -52,18 +52,18 @@ float fz_defuzz(uint8_t method, float lo, float hi, const float *ys, uint16_t n,
     }
 
     case FZ_DEFUZZ_WTSUM: {
-        float swx = 0.0f;
-        const float step = fz_step(lo, hi, n);
-        for (i = 0; i < n; ++i) swx += ys[i] * (lo + (float)i * step);
+        fz_real_t swx = 0.0f;
+        const fz_real_t step = fz_step(lo, hi, n);
+        for (i = 0; i < n; ++i) swx += ys[i] * (lo + (fz_real_t)i * step);
         return swx;
     }
 
     case FZ_DEFUZZ_CENTROID_INTEGRAL: {
         /* Reference-toolkit extension: trapz(x, x.*y) / trapz(x, y). */
-        float num = 0.0f, den = 0.0f;
-        float dx = (n <= 1) ? 0.0f : (hi - lo) / (float)(n - 1);
+        fz_real_t num = 0.0f, den = 0.0f;
+        fz_real_t dx = (n <= 1) ? 0.0f : (hi - lo) / (fz_real_t)(n - 1);
         for (i = 0; i + 1 < n; ++i) {
-            float x0 = fz_x(lo, hi, i, n), x1 = fz_x(lo, hi, i + 1, n);
+            fz_real_t x0 = fz_x(lo, hi, i, n), x1 = fz_x(lo, hi, i + 1, n);
             num += 0.5f * (ys[i] * x0 + ys[i + 1] * x1) * dx;
             den += 0.5f * (ys[i] + ys[i + 1]) * dx;
         }
@@ -78,7 +78,7 @@ float fz_defuzz(uint8_t method, float lo, float hi, const float *ys, uint16_t n,
          * equal the maximum, and on an all-zero set every sample is a maximum:
          * som -> lo, lom -> hi, mom -> midpoint. Returning `fallback` here
          * makes som/lom wrong at the edge of every rule base. */
-        float mx = ys[0], acc = 0.0f;
+        fz_real_t mx = ys[0], acc = 0.0f;
         uint16_t count = 0;
         for (i = 1; i < n; ++i) if (ys[i] > mx) mx = ys[i];
         for (i = 0; i < n; ++i) {
@@ -94,7 +94,7 @@ float fz_defuzz(uint8_t method, float lo, float hi, const float *ys, uint16_t n,
             for (i = n; i-- > 0;) if (ys[i] == mx) return fz_x(lo, hi, i, n);
             return fallback;
         }
-        return acc / (float)count;
+        return acc / (fz_real_t)count;
     }
 
     case FZ_DEFUZZ_BISECTOR: {
@@ -103,8 +103,8 @@ float fz_defuzz(uint8_t method, float lo, float hi, const float *ys, uint16_t n,
          * including the midpoint, and `lower = midpoint` (not midpoint+1) on the
          * other branch. The termination detail matters: it decides whether the
          * answer lands one grid step early or late. */
-        float total = fz_area(ys, lo, hi, n, n);
-        float half;
+        fz_real_t total = fz_area(ys, lo, hi, n, n);
+        fz_real_t half;
         uint16_t lower = 0, upper = (uint16_t)(n - 1), mid = 0, guard = 0;
         if (total == 0.0f) return fallback;
         half = total * 0.5f;
