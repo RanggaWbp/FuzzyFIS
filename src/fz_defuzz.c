@@ -1,9 +1,14 @@
 /* fz_defuzz.c — no allocation, grid computed on the fly. */
 #include "fz_defuzz.h"
 
+/* Grid point k. The step is hoisted by the callers that walk the whole range;
+ * this helper stays for the random-access cases (mom/som/lom). */
+static float fz_step(float lo, float hi, uint16_t n) {
+    return (n <= 1) ? 0.0f : (hi - lo) / (float)(n - 1);
+}
+
 static float fz_x(float lo, float hi, uint16_t k, uint16_t n) {
-    if (n <= 1) return lo;
-    return lo + ((float)k * (hi - lo)) / (float)(n - 1);
+    return lo + (float)k * fz_step(lo, hi, n);
 }
 
 /* Trapezoid area of ys over [lo, hi], from index 0..upto (exclusive). */
@@ -37,13 +42,19 @@ float fz_defuzz(uint8_t method, float lo, float hi, const float *ys, uint16_t n,
     case FZ_DEFUZZ_CENTROID:
     case FZ_DEFUZZ_WTAVER: {
         float sw = 0.0f, swx = 0.0f;
-        for (i = 0; i < n; ++i) { float x = fz_x(lo, hi, i, n); sw += ys[i]; swx += ys[i] * x; }
+        const float step = fz_step(lo, hi, n);
+        for (i = 0; i < n; ++i) {
+            float x = lo + (float)i * step;
+            sw += ys[i];
+            swx += ys[i] * x;
+        }
         return (sw == 0.0f) ? fallback : (swx / sw);
     }
 
     case FZ_DEFUZZ_WTSUM: {
         float swx = 0.0f;
-        for (i = 0; i < n; ++i) swx += ys[i] * fz_x(lo, hi, i, n);
+        const float step = fz_step(lo, hi, n);
+        for (i = 0; i < n; ++i) swx += ys[i] * (lo + (float)i * step);
         return swx;
     }
 

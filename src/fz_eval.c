@@ -60,6 +60,7 @@ static float fz_eval_mamdani(const fz_fis_t *fis, const float *in, uint16_t out_
     uint16_t np = fz_npoints(fis);
     uint16_t k;
     uint16_t r;
+    const float step = (np <= 1) ? 0.0f : (ov->hi - ov->lo) / (float)(np - 1);
 
     for (k = 0; k < np; ++k) w->buf[k] = 0.0f;
 
@@ -77,8 +78,7 @@ static float fz_eval_mamdani(const fz_fis_t *fis, const float *in, uint16_t out_
 
         mf = &ov->mfs[s.mf_index - 1];
         for (k = 0; k < np; ++k) {
-            float x = (np <= 1) ? ov->lo
-                                : ov->lo + ((float)k * (ov->hi - ov->lo)) / (float)(np - 1);
+            float x = ov->lo + (float)k * step;
             float y = fz_mf_eval(mf->type, mf->p, x, s.hedge, s.not_flag);
             y = fz_op2(fis->imp_op, strength, y);          /* min | prod */
             w->buf[k] = fz_op2(fis->agg_op, w->buf[k], y); /* max | sum | probor */

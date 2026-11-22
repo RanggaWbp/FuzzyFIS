@@ -137,3 +137,19 @@ Allocations in `src/`: **none**. No `malloc`, `calloc`, `realloc`, `new`,
 
 Flash scales with the FIS you generate or parse, not with the library: the
 evaluator is one path for every board.
+
+## 9. Measured speed (x86-64, `-O2`)
+
+Tipper Mamdani, 2 inputs / 1 output / 3 rules / 101 sample points:
+
+```
+3.0 us per evaluation  (~330 000 evaluations/s)
+```
+
+That is 303 membership-function evaluations plus 101 defuzzification steps per
+call, which is the irreducible cost of matching MATLAB's grid. Sugeno systems
+skip the grid entirely and cost a few hundred nanoseconds.
+
+On an AVR at 16 MHz expect roughly 250-400 us per evaluation: fine for control
+loops at tens of Hz, not for kHz-class work. Lower `FZ_MAX_POINTS` (with the
+measured accuracy cost) or use Sugeno when that matters.
