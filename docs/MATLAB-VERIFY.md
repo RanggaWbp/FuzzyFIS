@@ -37,7 +37,7 @@ python3 tests/golden/make_golden.py
 FLT_PATH=/var/tmp/flt-src/inst \
 /home/ranggawbp/.hermes/cache/scratch/mm/bin/micromamba run -p /var/tmp/octenv \
   octave --no-gui --quiet \
-  --eval "addpath('/home/ranggawbp/Projects/embedded-fuzzy/tools'); \
+  --eval "addpath('<repo>/tools'); \
           oracle('/abs/MODEL.fis','/abs/INPUTS.txt',101,'/abs/OUT.csv','/abs/DETAIL.json')"
 ```
 

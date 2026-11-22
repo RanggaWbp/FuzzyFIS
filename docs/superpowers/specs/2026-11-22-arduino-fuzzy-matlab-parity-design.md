@@ -1,6 +1,6 @@
 # fz — Arduino Fuzzy Logic Library with MATLAB Toolbox Parity
 
-Status: approved design (2026-11-22) · Repo: `/home/ranggawbp/Projects/embedded-fuzzy`
+Status: approved design (2026-11-22) · Repo: `<repo>`
 
 ## 1. Intent
 

@@ -1,6 +1,6 @@
 # fz — MATLAB-compatible fuzzy inference, contract for implementers
 
-Repo: `/home/ranggawbp/Projects/embedded-fuzzy` (C++11 + Python 3 tools).
+Repo: `<repo>` (C++11 + Python 3 tools).
 No MATLAB here. Oracle = Octave 10.3 + fuzzy-logic-toolkit 0.4.6 at
 `/var/tmp/flt-src/inst` (run via `/home/ranggawbp/.hermes/cache/scratch/mm/bin/micromamba run -p /var/tmp/octenv octave --no-gui --quiet FILE.m`).
 The MATLAB Fuzzy Logic Toolbox is the target semantics; the toolkit reproduces the
