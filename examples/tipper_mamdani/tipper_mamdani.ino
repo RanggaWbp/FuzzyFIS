@@ -9,7 +9,7 @@
  */
 #include <fz.h>
 
-#if !defined(FZ_HAS_PARSER)
+#if !FZ_HAS_PARSER
 
 void setup() {
   Serial.begin(115200);

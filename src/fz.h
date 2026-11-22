@@ -40,9 +40,15 @@
 #  define FZ_ARDUINO_SAFE 0
 #endif
 
+/* FZ_HAS_PARSER is always DEFINED (0 or 1). Sketches gate on its value:
+ *   #if FZ_HAS_PARSER ... #else "use generated_static instead" #endif
+ * Leaving it undefined on AVR makes `#if !defined(FZ_HAS_PARSER)` true there,
+ * which silently compiles the sketch without the parser instead of saying so. */
 #if defined(FZ_ENABLE_PARSER) || (defined(ARDUINO) && !FZ_ARDUINO_SAFE) || !defined(ARDUINO)
 #  include "fz_fis_parse.h"
 #  define FZ_HAS_PARSER 1
+#else
+#  define FZ_HAS_PARSER 0
 #endif
 
 #endif /* FZ_H */
