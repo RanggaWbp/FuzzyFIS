@@ -74,7 +74,7 @@ Sugeno skips the sample grid and costs a few hundred nanoseconds.
 
 **Add .ZIP Library (works today):**
 
-1. Download [`FuzzyFIS-0.1.0.zip`](../../releases/latest)
+1. Download [`FuzzyFIS.zip`](../../releases/latest)
 2. *Sketch → Include Library → Add .ZIP Library…*
 3. Pick the zip. The examples appear under *File → Examples → FuzzyFIS*.
 
