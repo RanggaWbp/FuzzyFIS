@@ -156,10 +156,22 @@ def mf_value(kind, p, x):
     """One membership value; contract's degenerate guards turn 0/0 into 0."""
     if kind == 'trimf':
         a, b, c = p[0], p[1], p[2]
-        return max(0.0, min(1.0, _div(x - a, b - a), _div(c - x, c - b)))
+        if x == b:
+            return 1.0
+        if a < x < b:
+            return (x - a) / (b - a)
+        if b < x < c:
+            return (c - x) / (c - b)
+        return 0.0
     if kind == 'trapmf':
         a, b, c, d = p[0], p[1], p[2], p[3]
-        return max(0.0, min(1.0, _div(x - a, b - a), _div(d - x, d - c)))
+        if b <= c and b <= x <= c:
+            return 1.0
+        if a < x < b:
+            return (x - a) / (b - a)
+        if c < x < d:
+            return (d - x) / (d - c)
+        return 0.0
     if kind == 'gaussmf':
         return _gauss(x, p[0], p[1])
     if kind == 'gauss2mf':
