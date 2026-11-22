@@ -1,0 +1,49 @@
+% wtsum_probor.fis -- covers two paths no other fixture exercises:
+%   DefuzzMethod='wtsum'  (weighted sum, not weighted average)
+%   OrMethod='probor'     (probabilistic OR = a+b-ab)
+% Sugeno, because wtsum is a Sugeno defuzzification method in MATLAB.
+[System]
+Name='wtsum_probor'
+Type='sugeno'
+Version=2.0
+NumInputs=2
+NumOutputs=1
+NumRules=8
+AndMethod='min'
+OrMethod='probor'
+ImpMethod='prod'
+AggMethod='sum'
+DefuzzMethod='wtsum'
+
+[Input1]
+Name='a'
+Range=[0 10]
+NumMFs=3
+MF1='lo':'trimf',[0 0 5]
+MF2='mid':'trimf',[0 5 10]
+MF3='hi':'trimf',[5 10 10]
+
+[Input2]
+Name='b'
+Range=[0 10]
+NumMFs=3
+MF1='lo':'trimf',[0 0 5]
+MF2='mid':'trimf',[0 5 10]
+MF3='hi':'trimf',[5 10 10]
+
+[Output1]
+Name='y'
+Range=[0 30]
+NumMFs=2
+MF1='small':'constant',[5]
+MF2='big':'linear',[0.5 0.5 2]
+
+[Rules]
+1 1, 1 (1) : 1
+3 3, 2 (1) : 1
+2 1, 2 (0.7) : 2
+1 3, 1 (0.4) : 2
+2 2, 1 (1) : 1
+1 0, 1 (1) : 1
+2 0, 2 (1) : 1
+3 0, 1 (1) : 1

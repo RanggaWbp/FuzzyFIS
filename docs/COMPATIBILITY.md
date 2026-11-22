@@ -57,11 +57,41 @@ the toolkit.
 | 2 | `defuzz.m` `bisector` returns `midpoint`, the **array index** | Returns the x value of the bisector |
 | 3 | Sugeno aggregation uses the file's `AggMethod` | Sugeno always aggregates by **sum**; a file saying `AggMethod='max'` silently drops duplicate singletons in the toolkit |
 | 4 | `einstein_product` fold starts at 1 and re-folds `x(1)`, squaring the first term | T-norm fold starts from the identity 1 |
+| 5 | Ships **no `probor` at all**, so any FIS with `OrMethod='probor'` is unevaluable | `probor(a,b) = a + b - a*b` |
+| 6 | Sugeno with an empty aggregate aborts: `next_agg_output(1,_): out of bound 0` | MATLAB documents the range midpoint for a zero area |
 
 Additionally, on a **zero output area** the toolkit returns the top of the range
 for `bisector`, whereas MATLAB documents the range **midpoint**. `som`/`lom`/`mom`
 return the first/last/mean of the samples attaining the maximum, which on an
 all-zero set means `lo`/`hi`/midpoint respectively — the library matches that.
+
+
+## 3a. Method coverage in the fixtures
+
+Every row below is exercised by at least one golden fixture and measured against
+the oracle (not just implemented):
+
+| Method | Fixture |
+|---|---|
+| `centroid` | mamdani_tip_calculator, mf-gauss, mf-sigmoid, hedges |
+| `bisector` | edge_hedges |
+| `mom` / `lom` / `som` | defuzz-mom, defuzz-lom, mf-zs |
+| `wtaver` | sugeno_tip_calculator, linear_tip_calculator, cubic_approximator |
+| `wtsum` | wtsum_probor |
+| `centroid_integral` | investment_portfolio |
+| AND/OR `min`, `max` | most fixtures |
+| AND/OR `prod`, `probor` | cubic_approximator, wtsum_probor |
+| AND/OR `einstein_product`, `einstein_sum` | sugeno_tip_calculator, investment_portfolio |
+| `algebraic_sum` | sugeno_tip_calculator |
+| implication `min`, `prod` | both |
+| aggregation `max`, `sum` | both |
+| all 13 MF types | trimf trapmf gaussmf gauss2mf gbellmf sigmf dsigmf psigmf zmf smf pimf linsmf linzmf |
+
+Two entries in `fz_ops.c` have no dedicated fixture: `hamacher_product`,
+`hamacher_sum`, `bounded_sum` and `algebraic_product` are covered by
+`test_ops.c` unit assertions against their closed-form definitions, not by an
+end-to-end FIS. Same for `dsigmf`/`psigmf`/`pimf` shape values in `test_mf.c`.
+That is a weaker form of evidence than a golden file and is stated as such.
 
 ## 4. Exactness claims, scoped
 

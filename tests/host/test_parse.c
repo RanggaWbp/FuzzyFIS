@@ -131,6 +131,7 @@ int main(void) {
         {"mf-zs", "tests/golden/mf-zs.fis"},
         {"sugeno-linear2", "tests/golden/sugeno-linear2.fis"},
         {"sugeno_tip_calculator", "tests/golden/sugeno_tip_calculator.fis"},
+        {"wtsum_probor", "tests/golden/wtsum_probor.fis"},
     };
     size_t i;
 

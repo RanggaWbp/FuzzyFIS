@@ -25,6 +25,25 @@ rm -rf "$DST"
 mkdir -p "$(dirname "$DST")"
 cp -r "$SRC" "$DST"
 
+# 5. The toolkit ships no `probor` at all, so a FIS whose OrMethod is 'probor'
+#    cannot be evaluated. MATLAB defines it as a + b - a*b.
+cat > "$DST/probor.m" <<'M'
+## probor -- probabilistic OR, as defined by the MATLAB Fuzzy Logic Toolbox.
+## The reference toolkit omits this method entirely, which makes any FIS with
+## OrMethod='probor' unevaluable there.
+function retval = probor (x, y = 0)
+  if (nargin == 1)
+    retval = 0;
+    for i = 1 : length (x)
+      retval = retval + x(i) - retval * x(i);
+    endfor
+    return;
+  endif
+  retval = x + y - x .* y;
+endfunction
+M
+echo "  patched: probor (missing from the toolkit)"
+
 python3 - "$DST" <<'PY'
 import pathlib, sys
 
