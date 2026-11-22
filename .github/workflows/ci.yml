@@ -11,7 +11,7 @@ jobs:
     name: host tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Build and run host test suite
         run: make -C tests/host run
 
@@ -19,7 +19,7 @@ jobs:
     name: asan + ubsan
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Run the suite under ASan and UBSan
         run: |
           make -C tests/host clean
@@ -30,7 +30,7 @@ jobs:
     name: headers compile as C++11
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Every source file as C++11
         run: |
           set -eu
@@ -43,8 +43,8 @@ jobs:
     name: codegen in sync
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.11"
       - name: Generator self-check
@@ -95,7 +95,7 @@ jobs:
           - esp32:esp32:esp32
           - STMicroelectronics:stm32:GenF4
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Install arduino-cli
         run: |
           mkdir -p "$PWD/bin"
