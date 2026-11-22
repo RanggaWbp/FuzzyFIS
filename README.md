@@ -274,17 +274,17 @@ into a build rule.
 ## Repository layout
 
 ```
-src/              the library — 6 translation units, no dependencies
+src/              the library — 5 translation units, no dependencies
   fz_types.h      static FIS model, rule-slot encoding
   fz_mf.c         13 membership functions, hedges, NOT
   fz_ops.c        t-norms and s-norms
-  fz_defuzz.c     7 defuzzification methods
+  fz_defuzz.c     8 defuzzification methods
   fz_eval.c       Mamdani + Sugeno + Tsukamoto evaluator
   fz_fis_parse.c  .fis reader (opt-in)
   examples/         generated_static, tipper_mamdani, tipper_sugeno
 tools/            fis2h.py, fis2json.py, check_parity.py, oracle.m, patch-oracle.sh
-tests/golden/     14 reference systems + oracle output
-tests/host/       6 test binaries, `make -C tests/host run`
+tests/golden/     21 reference systems, 20 parity-checked + oracle output
+tests/host/       7 test binaries, `make -C tests/host run`
 tests/stm32f103/  Cortex-M3 cross-compile gate, `make -C tests/stm32f103 run`
 docs/             COMPATIBILITY.md, MATLAB-VERIFY.md
 CONTRACT.md       the normative spec the implementation is written against
@@ -297,7 +297,7 @@ CONTRACT.md       the normative spec the implementation is written against
 The host suite needs only a C compiler:
 
 ```sh
-make -C tests/host run          # 18 checks, no framework, no network
+make -C tests/host run          # 7 test binaries, no framework, no network
 make -C tests/stm32f103 run     # cross-compile gate: Cortex-M3 ELF + size
 make -C tests/stm32f103 run FZ_DOUBLE=1   # same, 64-bit fz_real_t build
 ```
