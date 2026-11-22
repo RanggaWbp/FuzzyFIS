@@ -1,0 +1,31 @@
+{
+  "name": "fz",
+  "version": "0.1.0",
+  "description": "MATLAB-compatible fuzzy inference (Mamdani and Sugeno) for microcontrollers. Deterministic float32, no heap, no exceptions; static FIS tables or runtime .fis parsing.",
+  "keywords": [
+    "fuzzy",
+    "fuzzy-logic",
+    "fis",
+    "mamdani",
+    "sugeno",
+    "control"
+  ],
+  "license": "MIT",
+  "frameworks": "*",
+  "platforms": "*",
+  "headers": "fz.h",
+  "build": {
+    "srcDir": "src",
+    "flags": [
+      "-std=gnu++11"
+    ]
+  },
+  "export": {
+    "exclude": [
+      "tests",
+      "tools",
+      "docs",
+      ".github"
+    ]
+  }
+}

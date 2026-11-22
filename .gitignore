@@ -1,0 +1,5 @@
+*.o
+*.bin
+tests/host/build/
+tools/__pycache__/
+__pycache__/

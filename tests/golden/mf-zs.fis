@@ -1,0 +1,30 @@
+[System]
+Name='mf-zs'
+Type='mamdani'
+Version=2.0
+NumInputs=1
+NumOutputs=1
+NumRules=2
+AndMethod='min'
+OrMethod='max'
+ImpMethod='min'
+AggMethod='max'
+DefuzzMethod='som'
+
+[Input1]
+Name='x'
+Range=[0 12]
+NumMFs=2
+MF1='z':'zmf',[2 9]
+MF2='p':'pimf',[1 4 7 11]
+
+[Output1]
+Name='y'
+Range=[0 10]
+NumMFs=2
+MF1='tri':'trimf',[0 5 10]
+MF2='tri2':'trimf',[1 6 10]
+
+[Rules]
+1, 1 (1) : 1
+2, 2 (1) : 1

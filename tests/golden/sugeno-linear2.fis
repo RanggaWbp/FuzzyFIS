@@ -1,0 +1,46 @@
+[System]
+Name='sugeno-linear2'
+Type='sugeno'
+Version=2.0
+NumInputs=2
+NumOutputs=2
+NumRules=3
+AndMethod='min'
+OrMethod='max'
+ImpMethod='prod'
+AggMethod='sum'
+DefuzzMethod='wtaver'
+
+[Input1]
+Name='p'
+Range=[0 10]
+NumMFs=2
+MF1='small':'gbellmf',[2 1 2]
+MF2='large':'gbellmf',[2 1 8]
+
+[Input2]
+Name='q'
+Range=[-1 1]
+NumMFs=2
+MF1='neg':'sigmf',[4 0]
+MF2='pos':'sigmf',[-4 0]
+
+[Output1]
+Name='u'
+Range=[0 40]
+NumMFs=3
+MF1='lin':'linear',[2 -3 5]
+MF2='lin2':'linear',[-1 2 1]
+MF3='konst':'constant',[7.5]
+
+[Output2]
+Name='v'
+Range=[-10 10]
+NumMFs=2
+MF1='lin':'linear',[0.5 0.5 -2]
+MF2='konst':'constant',[3]
+
+[Rules]
+1 1, 1 1 (1) : 1
+2 2, 2 2 (0.9) : 1
+0 2, 3 0 (1) : 1

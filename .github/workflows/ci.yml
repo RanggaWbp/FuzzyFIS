@@ -1,0 +1,95 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  host-tests:
+    name: host tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and run host test suite
+        run: make -C tests/host run
+
+  codegen:
+    name: codegen in sync
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Generator self-check
+        run: python3 tools/fis2h.py --selftest
+      - name: Regenerate headers from every example .fis
+        run: |
+          set -eu
+          python3 tools/fis2h.py examples/generated_static/tipper.fis \
+            --source examples/generated_static/tipper.fis \
+            -o examples/generated_static/tipper_fis.h
+          python3 tools/fis2h.py examples/tipper_mamdani/tipper.fis \
+            --source examples/tipper_mamdani/tipper.fis \
+            -o /tmp/tipper_fis.h
+          python3 tools/fis2h.py examples/tipper_sugeno/tipper.fis \
+            --source examples/tipper_sugeno/tipper.fis \
+            -o /tmp/tipper_sugeno_fis.h
+          python3 tools/fis2h.py tests/fis/edge_hedges.fis \
+            --source tests/fis/edge_hedges.fis \
+            -o /tmp/edge_hedges_fis.h
+      - name: Committed header must match generator output
+        run: git diff --exit-code -- examples/generated_static/tipper_fis.h
+      - name: Generated headers compile clean (C99 + C++11)
+        run: |
+          set -eu
+          for std in c99; do
+            for f in examples/generated_static/tipper_fis.h /tmp/tipper_fis.h \
+                   /tmp/tipper_sugeno_fis.h /tmp/edge_hedges_fis.h; do
+              gcc -std=$std -Wall -Wextra -Werror -pedantic -Isrc -Iexamples/generated_static \
+                -x c -c "$f" -o /dev/null
+            done
+          done
+          for f in examples/generated_static/tipper_fis.h /tmp/tipper_fis.h \
+                   /tmp/tipper_sugeno_fis.h /tmp/edge_hedges_fis.h; do
+            g++ -std=c++11 -Wall -Wextra -Werror -pedantic -Isrc -Iexamples/generated_static \
+              -x c++ -c "$f" -o /dev/null
+          done
+
+  arduino:
+    name: arduino-cli ${{ matrix.fqbn }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        fqbn:
+          - arduino:avr:uno
+          - esp32:esp32:esp32
+          - STMicroelectronics:stm32:GenF4
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install arduino-cli
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh \
+            | BINDIR="$PWD/bin" sh
+          echo "$PWD/bin" >> "$GITHUB_PATH"
+      - name: Install cores
+        run: |
+          arduino-cli config init --overwrite
+          arduino-cli config add board_manager.additional_urls \
+            https://espressif.github.io/arduino-esp32/package_esp32_index.json
+          arduino-cli config add board_manager.additional_urls \
+            https://github.com/stm32duino/BoardManagerFiles/raw/main/package_stmicroelectronics_index.json
+          arduino-cli core update-index
+          arduino-cli core install arduino:avr
+          arduino-cli core install esp32:esp32
+          arduino-cli core install STMicroelectronics:stm32
+      - name: Compile every example
+        run: |
+          set -eu
+          for ex in examples/*/; do
+            echo "== $ex"
+            arduino-cli compile --fqbn "${{ matrix.fqbn }}" --library . --warnings all "$ex"
+          done

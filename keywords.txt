@@ -1,0 +1,78 @@
+#######################################
+# Syntax Coloring Map For fz
+#######################################
+
+#######################################
+# Datatypes (KEYWORD1)
+#######################################
+
+fz_type_t	KEYWORD1
+fz_mf_type_t	KEYWORD1
+fz_op_t	KEYWORD1
+fz_defuzz_t	KEYWORD1
+fz_mf_t	KEYWORD1
+fz_var_t	KEYWORD1
+fz_rule_t	KEYWORD1
+fz_fis_t	KEYWORD1
+fz_work_t	KEYWORD1
+fz_slot_t	KEYWORD1
+fz_pool_size_t	KEYWORD1
+
+#######################################
+# Methods and Functions (KEYWORD2)
+#######################################
+
+fz_eval	KEYWORD2
+fz_eval_all	KEYWORD2
+fz_fis_check	KEYWORD2
+fz_slot_decode	KEYWORD2
+fz_fuzzify	KEYWORD2
+fz_firing	KEYWORD2
+fz_mf_eval	KEYWORD2
+fz_linspace	KEYWORD2
+fz_hedge_apply	KEYWORD2
+fz_op_fold	KEYWORD2
+fz_op2	KEYWORD2
+fz_defuzz	KEYWORD2
+fz_npoints	KEYWORD2
+fz_fis_parse	KEYWORD2
+fz_fis_parse_text	KEYWORD2
+
+#######################################
+# Constants (LITERAL1)
+#######################################
+
+FZ_MAMDANI	LITERAL1
+FZ_SUGENO	LITERAL1
+FZ_MF_TRIMF	LITERAL1
+FZ_MF_TRAPMF	LITERAL1
+FZ_MF_GAUSSMF	LITERAL1
+FZ_MF_GAUSS2MF	LITERAL1
+FZ_MF_GBELLMF	LITERAL1
+FZ_MF_SIGMF	LITERAL1
+FZ_MF_DSIGMF	LITERAL1
+FZ_MF_PSIGMF	LITERAL1
+FZ_MF_ZMF	LITERAL1
+FZ_MF_SMF	LITERAL1
+FZ_MF_PIMF	LITERAL1
+FZ_MF_LINSMF	LITERAL1
+FZ_MF_LINZMF	LITERAL1
+FZ_MF_CONSTANT	LITERAL1
+FZ_MF_LINEAR	LITERAL1
+FZ_OP_MIN	LITERAL1
+FZ_OP_MAX	LITERAL1
+FZ_OP_PROD	LITERAL1
+FZ_OP_SUM	LITERAL1
+FZ_OP_PROBOR	LITERAL1
+FZ_DEFUZZ_CENTROID	LITERAL1
+FZ_DEFUZZ_BISECTOR	LITERAL1
+FZ_DEFUZZ_MOM	LITERAL1
+FZ_DEFUZZ_SOM	LITERAL1
+FZ_DEFUZZ_LOM	LITERAL1
+FZ_DEFUZZ_WTAVER	LITERAL1
+FZ_DEFUZZ_WTSUM	LITERAL1
+FZ_MAX_POINTS	LITERAL1
+FZ_NAME_LEN	LITERAL1
+FZ_ENABLE_PARSER	LITERAL1
+FZ_ARDUINO_SAFE	LITERAL1
+FZ_HAS_PARSER	LITERAL1

@@ -1,0 +1,74 @@
+{
+  "generated_by": "tests/golden/make_golden.py",
+  "octave": "GNU Octave 10.3.0 + fuzzy-logic-toolkit 0.4.6",
+  "n_points": 101,
+  "files": [
+    {
+      "fis": "cubic_approximator",
+      "rows": 21,
+      "max_abs_error": 0.0
+    },
+    {
+      "fis": "defuzz-lom",
+      "rows": 11,
+      "max_abs_error": 0.0
+    },
+    {
+      "fis": "defuzz-mom",
+      "rows": 11,
+      "max_abs_error": 0.0
+    },
+    {
+      "fis": "heart_disease_risk",
+      "rows": 121,
+      "max_abs_error": 0.0
+    },
+    {
+      "fis": "hedges",
+      "rows": 36,
+      "max_abs_error": 1.7763568394002505e-15
+    },
+    {
+      "fis": "investment_portfolio",
+      "rows": 121,
+      "max_abs_error": 0.0
+    },
+    {
+      "fis": "linear_tip_calculator",
+      "rows": 121,
+      "max_abs_error": 0.0
+    },
+    {
+      "fis": "mamdani_tip_calculator",
+      "rows": 121,
+      "max_abs_error": 6.772360450213455e-15
+    },
+    {
+      "fis": "mf-gauss",
+      "rows": 441,
+      "max_abs_error": 4.440892098500626e-16
+    },
+    {
+      "fis": "mf-sigmoid",
+      "rows": 187,
+      "max_abs_error": 5.684341886080802e-14
+    },
+    {
+      "fis": "mf-zs",
+      "rows": 13,
+      "max_abs_error": 0.0
+    },
+    {
+      "fis": "sugeno-linear2",
+      "rows": 99,
+      "max_abs_error": 0.0
+    },
+    {
+      "fis": "sugeno_tip_calculator",
+      "rows": 121,
+      "max_abs_error": 0.0
+    }
+  ],
+  "rows_total": 1424,
+  "max_abs_error": 5.684341886080802e-14
+}

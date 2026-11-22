@@ -1,0 +1,39 @@
+[System]
+Name='mf-sigmoid'
+Type='mamdani'
+Version=2.0
+NumInputs=2
+NumOutputs=1
+NumRules=3
+AndMethod='prod'
+OrMethod='algebraic_sum'
+ImpMethod='prod'
+AggMethod='algebraic_sum'
+DefuzzMethod='centroid'
+
+[Input1]
+Name='a'
+Range=[-4 4]
+NumMFs=3
+MF1='ds':'dsigmf',[2 -1 2 1]
+MF2='ps':'psigmf',[1.5 -0.5 1.5 2]
+MF3='sg':'sigmf',[-1.2 0.3]
+
+[Input2]
+Name='b'
+Range=[0 1]
+NumMFs=2
+MF1='lo':'linsmf',[0.1 0.6]
+MF2='hi':'linzmf',[0.2 0.9]
+
+[Output1]
+Name='o'
+Range=[0 100]
+NumMFs=2
+MF1='low':'trapmf',[0 1 25 55]
+MF2='high':'trapmf',[40 70 99 100]
+
+[Rules]
+1 1, 1 (1) : 2
+2 2, 2 (0.6) : 1
+3 0, 2 (0.35) : 1

@@ -1,0 +1,12 @@
+{
+  "source": "tools/oracle.m",
+  "engine": "GNU Octave 10.3.0 + fuzzy-logic-toolkit",
+  "type": "sugeno",
+  "n_points": 101,
+  "inputs": [5],
+  "output": [125],
+  "rule_input": [[0], [0], [0], [0], [0], [0], [0], [0], [0], [0], [1]],
+  "firing": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+  "rule_output": [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 125], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]],
+  "singletons": [[[125], [1]]]
+}
