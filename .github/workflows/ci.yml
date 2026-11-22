@@ -15,6 +15,30 @@ jobs:
       - name: Build and run host test suite
         run: make -C tests/host run
 
+  sanitizers:
+    name: asan + ubsan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run the suite under ASan and UBSan
+        run: |
+          make -C tests/host clean
+          make -C tests/host \
+            CFLAGS="-std=c11 -Wall -Wextra -O1 -g -fsanitize=address,undefined -I$PWD/src" run
+
+  cpp-headers:
+    name: headers compile as C++11
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Every source file as C++11
+        run: |
+          set -eu
+          for f in src/*.c; do
+            g++ -std=c++11 -Wall -Wextra -Werror -pedantic -O2 -Isrc -x c++ -c "$f" -o /tmp/$(basename "$f").o
+          done
+          echo "all sources compile as C++11"
+
   codegen:
     name: codegen in sync
     runs-on: ubuntu-latest
