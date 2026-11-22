@@ -418,8 +418,10 @@ def eval_sugeno(fis, x):
         merged = []
         for loc, h in singles:
             if merged and merged[-1][0] == loc:
-                merged[-1][1] = (merged[-1][1] + h if fis['agg'] == 'sum'
-                                 else op2(fis['agg'], merged[-1][1], h))
+                # MATLAB: Sugeno aggregation is ALWAYS sum, whatever AggMethod
+                # the file declares. Using fis['agg'] here drops duplicate
+                # singletons on files that say AggMethod='max'.
+                merged[-1][1] = merged[-1][1] + h
             else:
                 merged.append([loc, h])
         merged = [m for m in merged if m[1] != 0.0]
@@ -427,7 +429,9 @@ def eval_sugeno(fis, x):
             outputs.append(defuzz([m[0] for m in merged], [m[1] for m in merged],
                                   fis['defuzz']))
         else:
-            outputs.append(float('nan'))        # contract §C.5
+            # MATLAB documents: a zero output area yields the midpoint of the
+            # output range (evalfisOptions note). The toolkit returned NaN.
+            outputs.append((var['range'][0] + var['range'][1]) / 2.0)
         columns.append(cols)
         aggregated.append(merged)
     return outputs, strengths, columns, aggregated

@@ -37,7 +37,7 @@ function oracle (fis_path, input_path, num_points, out_path, detail_path)
   if (exist ('OCTAVE_VERSION', 'builtin'))
     toolkit = getenv ('FLT_PATH');
     if (isempty (toolkit))
-      toolkit = '/var/tmp/flt-src/inst';
+      toolkit = '/var/tmp/flt-oracle/inst';
     end
     if (exist (toolkit, 'dir'))
       addpath (toolkit);

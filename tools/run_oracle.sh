@@ -21,7 +21,7 @@ N=${3:-101}
 MAMBA=${MAMBA:-/home/ranggawbp/.hermes/cache/scratch/mm/bin/micromamba}
 ENV=${OCTAVE_ENV:-/var/tmp/octenv}
 OCTAVE=${OCTAVE_BIN:-}
-export FLT_PATH=${FLT_PATH:-/var/tmp/flt-src/inst}
+export FLT_PATH=${FLT_PATH:-/var/tmp/flt-oracle/inst}
 
 OUT=''
 DETAIL=''

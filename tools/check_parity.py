@@ -45,6 +45,7 @@ HARNESS = r"""
 #define MAX_MF 256
 #define MAX_RULES 512
 #define MAX_IDX 8192
+#define MAX_LIN 256
 
 static fz_mf_t   mf_pool[MAX_MF];
 static fz_var_t  in_pool[MAX_VARS], out_pool[MAX_VARS];
