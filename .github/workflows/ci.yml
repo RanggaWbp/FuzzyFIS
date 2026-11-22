@@ -49,38 +49,16 @@ jobs:
           python-version: "3.11"
       - name: Generator self-check
         run: python3 tools/fis2h.py --selftest
-      - name: Regenerate headers from every example .fis
+      - name: Regenerate headers from every tracked .fis (auto-discovered)
         run: |
           set -eu
-          python3 tools/fis2h.py examples/generated_static/tipper.fis \
-            --source examples/generated_static/tipper.fis \
-            -o examples/generated_static/tipper_fis.h
-          python3 tools/fis2h.py examples/tipper_mamdani/tipper.fis \
-            --source examples/tipper_mamdani/tipper.fis \
-            -o /tmp/tipper_fis.h
-          python3 tools/fis2h.py examples/tipper_sugeno/tipper.fis \
-            --source examples/tipper_sugeno/tipper.fis \
-            -o /tmp/tipper_sugeno_fis.h
-          python3 tools/fis2h.py tests/fis/edge_hedges.fis \
-            --source tests/fis/edge_hedges.fis \
-            -o /tmp/edge_hedges_fis.h
-      - name: Committed header must match generator output
-        run: git diff --exit-code -- examples/generated_static/tipper_fis.h
-      - name: Generated headers compile clean (C99 + C++11)
+          python3 tools/scan_fis_codegen.py
+      - name: Committed headers must match generator output
+        run: git diff --exit-code
+      - name: Generated headers compile clean (C99)
         run: |
           set -eu
-          for std in c99; do
-            for f in examples/generated_static/tipper_fis.h /tmp/tipper_fis.h \
-                   /tmp/tipper_sugeno_fis.h /tmp/edge_hedges_fis.h; do
-              gcc -std=$std -Wall -Wextra -Werror -pedantic -Isrc -Iexamples/generated_static \
-                -x c -c "$f" -o /dev/null
-            done
-          done
-          for f in examples/generated_static/tipper_fis.h /tmp/tipper_fis.h \
-                   /tmp/tipper_sugeno_fis.h /tmp/edge_hedges_fis.h; do
-            g++ -std=c++11 -Wall -Wextra -Werror -pedantic -Isrc -Iexamples/generated_static \
-              -x c++ -c "$f" -o /dev/null
-          done
+          python3 tools/scan_fis_codegen.py --compile
 
   arduino:
     name: arduino-cli ${{ matrix.fqbn }}
@@ -136,3 +114,18 @@ jobs:
         run: |
           set -eu
           ./tools/check_all_parity.sh
+
+  stm32f103:
+    name: stm32f103 cross-compile (float + double)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install arm-none-eabi-gcc
+        run: sudo apt-get update && sudo apt-get install -y gcc-arm-none-eabi
+      - name: Build and size STM32F103 (Cortex-M3, float32)
+        run: make -C tests/stm32f103 run
+      - name: Build STM32F103 with FZ_DOUBLE=1 (64-bit)
+        run: |
+          set -eu
+          make -C tests/stm32f103 clean
+          make -C tests/stm32f103 run FZ_DOUBLE=1
