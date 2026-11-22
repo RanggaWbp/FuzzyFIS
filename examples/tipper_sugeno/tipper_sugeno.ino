@@ -85,7 +85,7 @@ void setup() {
   while (!Serial) {
   }
 
-  int rc = fz_fis_parse_text(FIS_TEXT, &fis,
+  int rc = fz_fis_parse_text(FIS_TEXT, sizeof FIS_TEXT, &fis,
                              mf_pool, 16,
                              in_pool, 4,
                              out_pool, 4,
