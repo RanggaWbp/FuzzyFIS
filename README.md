@@ -1,8 +1,8 @@
 # FuzzyFIS
 
-**MATLAB-compatible fuzzy inference for microcontrollers** — Mamdani and Sugeno,
-`float32`, zero heap, no exceptions. A `.fis` file you tuned in the MATLAB Fuzzy
-Logic Toolbox runs on a 2 KB ATmega328P without retuning anything.
+**MATLAB-compatible fuzzy inference for microcontrollers** — Mamdani, Sugeno, and
+Tsukamoto, `float32`, zero heap, no exceptions. A `.fis` file you tuned in the MATLAB
+Fuzzy Logic Toolbox runs on a 2 KB ATmega328P without retuning anything.
 
 [![CI](https://img.shields.io/github/actions/workflow/status/RanggaWbp/FuzzyFIS/ci.yml?branch=main&label=CI)](../../actions)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
@@ -36,7 +36,7 @@ is in [`docs/COMPATIBILITY.md`](docs/COMPATIBILITY.md).
 
 | | |
 |---|---|
-| **Inference systems** | Mamdani, Sugeno (zero-order and first-order) |
+| **Inference systems** | Mamdani, Sugeno (zero-order and first-order), Tsukamoto |
 | **Defuzzification** | `centroid` `bisector` `mom` `som` `lom` `wtaver` `wtsum` `centroid_integral` |
 | **Membership functions** | `trimf` `trapmf` `gaussmf` `gauss2mf` `gbellmf` `sigmf` `dsigmf` `psigmf` `zmf` `smf` `pimf` `linsmf` `linzmf` + `constant` `linear` |
 | **Operators** | AND/OR: `min` `max` `prod` `probor` `sum` `algebraic_*` `bounded_sum` `einstein_*` `hamacher_*`<br>Implication: `min` `prod`<br>Aggregation: `max` `sum` `probor` |
@@ -242,6 +242,9 @@ fuzzify -> firing strength -> implication -> aggregation -> defuzzify
 - **Sugeno** computes one (location, height) singleton per rule and takes a
   weighted average. It ignores the file's implication/aggregation: MATLAB
   hard-codes `prod`/`sum` there.
+- **Tsukamoto** inverts each rule's firing height through a monotonic consequent
+  MF (`linsmf`/`linzmf`) to get a crisp `z`, then takes a weighted average/sum.
+  Implication is `prod`, aggregation `sum`, like Sugeno.
 
 Aggregation is **streamed per rule**, so no `rules × points` matrix ever exists.
 That is what makes a 101-point grid viable on an 8-bit MCU: the only buffer is
@@ -276,9 +279,9 @@ src/              the library — 6 translation units, no dependencies
   fz_mf.c         13 membership functions, hedges, NOT
   fz_ops.c        t-norms and s-norms
   fz_defuzz.c     7 defuzzification methods
-  fz_eval.c       Mamdani + Sugeno evaluator
+  fz_eval.c       Mamdani + Sugeno + Tsukamoto evaluator
   fz_fis_parse.c  .fis reader (opt-in)
-examples/         generated_static, tipper_mamdani, tipper_sugeno
+  examples/         generated_static, tipper_mamdani, tipper_sugeno
 tools/            fis2h.py, fis2json.py, check_parity.py, oracle.m, patch-oracle.sh
 tests/golden/     14 reference systems + oracle output
 tests/host/       6 test binaries, `make -C tests/host run`
