@@ -105,13 +105,18 @@ Measured with arduino-cli, same two examples, every supported architecture:
 | Board | `generated_static` (no parser) | `tipper_mamdani` (runtime parser) |
 |---|---|---|
 | `arduino:avr:uno` | 9338 B flash / 878 B RAM of 2048 | parser disabled (2 KB SRAM) |
-| `arduino:avr:mega` | 9784 B | 21772 B of 253952 |
-| `esp8266:esp8266:nodemcuv2` | 246360 B flash / 28944 B RAM of 80192 | 252300 B / 30576 B |
+| `arduino:avr:mega` | 9784 B | Mamdani 21772 B / Sugeno 21702 B of 253952 |
+| `esp8266:esp8266:nodemcuv2` | 246360 B flash / 28944 B RAM of 80192 | Mamdani 252300 B / Sugeno 252208 B, both 30576 B RAM |
 | `esp32:esp32:esp32` | CI only (not built on this host) | parser on |
-| `STMicroelectronics:stm32:GenF4` | 20752 B / 1656 B of 131072 | 26576 B / 2632 B |
+| `STMicroelectronics:stm32:GenF4` | 20752 B / 1656 B of 131072 | Mamdani 26576 B / Sugeno 26500 B, both 2632 B RAM |
 
 All measured with arduino-cli 1.6.0, `--library <checkout>`, no flags. Sugeno
-lands within 100 B of Mamdani on every board.
+lands within 100 B of Mamdani on every board — the two share the evaluator and
+differ only in the consequence step.
+
+On `arduino:avr:uno` the runtime examples build the 1542 B "parser disabled"
+stub rather than the FIS, so their size is not a library measurement. Use the
+`generated_static` column there.
 
 The parser is switched on automatically for anything that is not a small AVR
 (`fz.h` keys off `RAMEND` on AVR, and off `ARDUINO` elsewhere, so ESP8266,
