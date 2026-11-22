@@ -9,6 +9,24 @@ MATLAB runs on a 2 KB AVR without retuning.
 - Or parse a `.fis` file at runtime where RAM allows (host, ESP32, STM32).
 - Deterministic: fixed sample count, fixed fold order, no allocation in `fz_eval`.
 
+## Guarantees, measured
+
+- **No hardcoded counts.** Inputs, outputs, membership functions, rules and
+  sample points are sized by your pools, not by the library. `fz_mf_t.p[4]` is
+  the longest standard MF parameter list (pimf/gauss2mf/dsigmf/psigmf), not a
+  cap; Sugeno `linear` consequents carry `n_inputs+1` coefficients through a
+  caller-owned float array. `tests/host/test_unbounded.c` proves it with a
+  12-input, 30-rule system under ASan+UBSan.
+- **No heap.** Nothing in `src/` allocates. The only runtime buffer is
+  `fz_work_t`, 404 bytes.
+- **Parity with MATLAB**, not with another Arduino library: worst relative
+  error 1.4e-6 over 13 reference fixtures (bisector is grid-quantised and
+  declared as such). `docs/COMPATIBILITY.md` has the table.
+- **Footprint**: 5.4 KB evaluation core; the `.fis` parser adds 6.1 KB and is
+  opt-in. `arduino:avr:uno` with a generated FIS: 9362 B flash, 922 B RAM.
+- **Speed**: 3.0 us per evaluation for a 2-input/3-rule Mamdani FIS on x86-64
+  `-O2`; Sugeno skips the sample grid entirely.
+
 ## Install
 
 Arduino IDE / Arduino CLI: copy or symlink this directory into `~/Arduino/libraries/fz`
