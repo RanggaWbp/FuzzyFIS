@@ -123,3 +123,16 @@ jobs:
             echo "== $ex"
             arduino-cli compile --fqbn "${{ matrix.fqbn }}" --library . --warnings all "$ex"
           done
+
+  parity:
+    name: parity vs fis2json (MATLAB semantics)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+      - name: Run parity over every golden fixture
+        run: |
+          set -eu
+          ./tools/check_all_parity.sh
