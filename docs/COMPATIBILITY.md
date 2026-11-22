@@ -100,9 +100,19 @@ than producing a wrong number.
 | `.fis` parser (opt-in) | 6106 B |
 | Everything | 11.5 KB |
 
-Measured on `arduino:avr:uno` with arduino-cli: `generated_static` (no parser)
-9362 B flash / 922 B RAM; `tipper_mamdani` on `mega2560` (parser on)
-21692 B flash / ~2.5 KB RAM of 8 KB.
+Measured with arduino-cli, same two examples, every supported architecture:
+
+| Board | `generated_static` (no parser) | `tipper_mamdani` (runtime parser) |
+|---|---|---|
+| `arduino:avr:uno` | 9362 B flash / 922 B RAM | parser disabled (2 KB SRAM) |
+| `arduino:avr:mega` | 9808 B | 21692 B / 2510 B of 8 KB |
+| `esp8266:esp8266:nodemcuv2` | see the CI matrix | parser on (80 KB RAM) |
+| `esp32:esp32:esp32` | see the CI matrix | parser on |
+| `STMicroelectronics:stm32:GenF4` | 20752 B / 1656 B | 26576 B / 2632 B of 128 KB |
+
+The parser is switched on automatically for anything that is not a small AVR
+(`fz.h` keys off `RAMEND` on AVR, and off `ARDUINO` elsewhere, so ESP8266,
+ESP32 and STM32 all get it without a define).
 
 ## 7. No hardcoded counts
 

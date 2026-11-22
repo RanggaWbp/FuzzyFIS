@@ -3,10 +3,11 @@
 MATLAB-compatible fuzzy inference for microcontrollers. Mamdani and Sugeno,
 `float32`, no heap, no exceptions, no RTTI. Same membership functions, operators
 and inference order as the MATLAB Fuzzy Logic Toolbox, so a FIS you tuned in
-MATLAB runs on a 2 KB AVR without retuning.
+MATLAB runs on a 2 KB AVR without retuning. Verified on AVR, ESP8266, ESP32
+and STM32.
 
 - Static FIS tables in flash (`.rodata`), generated at build time from a `.fis` file.
-- Or parse a `.fis` file at runtime where RAM allows (host, ESP32, STM32).
+- Or parse a `.fis` file at runtime where RAM allows (host, ESP8266, ESP32, STM32).
 - Deterministic: fixed sample count, fixed fold order, no allocation in `fz_eval`.
 
 ## Guarantees, measured
