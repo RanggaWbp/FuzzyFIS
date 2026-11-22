@@ -495,6 +495,7 @@ int fz_fis_parse_text(const char *text, size_t text_len, fz_fis_t *out,
                     if (name_eq(key, "Type")) {
                         if (name_eq(val, "mamdani")) type = FZ_MAMDANI;
                         else if (name_eq(val, "sugeno")) type = FZ_SUGENO;
+                        else if (name_eq(val, "tsukamoto")) type = FZ_TSUKAMOTO;
                         else return FZ_ERR_TYPE;
                     } else if (name_eq(key, "Name")) {
                         copy_token(r, out->name, FZ_NAME_LEN);

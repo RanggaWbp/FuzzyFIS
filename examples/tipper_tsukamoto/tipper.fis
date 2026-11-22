@@ -1,0 +1,43 @@
+% tipper_tsukamoto.fis -- the tipper problem as Tsukamoto, 2 inputs / 1 output / 3 rules
+% Tsukamoto inverts each rule's firing height through a monotonic consequent MF.
+% Consequent MFs must be monotonic: linsmf (rising) or linzmf (falling).
+[System]
+Name='tipper_tsukamoto'
+Type='tsukamoto'
+Version=2.0
+NumInputs=2
+NumOutputs=1
+NumRules=3
+AndMethod='min'
+OrMethod='max'
+ImpMethod='prod'
+AggMethod='sum'
+DefuzzMethod='wtaver'
+
+[Input1]
+Name='service'
+Range=[0 10]
+NumMFs=3
+MF1='poor':'gaussmf',[1.5 0]
+MF2='good':'gaussmf',[1.5 5]
+MF3='excellent':'gaussmf',[1.5 10]
+
+[Input2]
+Name='food'
+Range=[0 10]
+NumMFs=2
+MF1='rancid':'gaussmf',[1.5 0]
+MF2='delicious':'gaussmf',[1.5 10]
+
+[Output1]
+Name='tip'
+Range=[0 30]
+NumMFs=3
+MF1='cheap':'linzmf',[0 10]
+MF2='average':'linsmf',[10 20]
+MF3='generous':'linsmf',[20 30]
+
+[Rules]
+1 1, 1 (1) : 1
+2 2, 2 (1) : 1
+3 2, 3 (1) : 1

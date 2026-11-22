@@ -281,7 +281,7 @@ src/              the library — 5 translation units, no dependencies
   fz_defuzz.c     8 defuzzification methods
   fz_eval.c       Mamdani + Sugeno + Tsukamoto evaluator
   fz_fis_parse.c  .fis reader (opt-in)
-  examples/         generated_static, tipper_mamdani, tipper_sugeno
+  examples/         generated_static, tipper_mamdani, tipper_sugeno, tipper_tsukamoto
 tools/            fis2h.py, fis2json.py, check_parity.py, oracle.m, patch-oracle.sh
 tests/golden/     21 reference systems, 20 parity-checked + oracle output
 tests/host/       7 test binaries, `make -C tests/host run`
