@@ -31,20 +31,20 @@
 #endif
 
 static const fz_mf_t tipper_in0_mf[3] = {
-    { FZ_MF_GAUSSMF, 2, { 1.5f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f } },
-    { FZ_MF_GAUSSMF, 2, { 1.5f, 5.0f, 0.0f, 0.0f, 0.0f, 0.0f } },
-    { FZ_MF_GAUSSMF, 2, { 1.5f, 10.0f, 0.0f, 0.0f, 0.0f, 0.0f } },
+    { FZ_MF_GAUSSMF, 2, { 1.5f, 0.0f, 0.0f, 0.0f }, 0 },
+    { FZ_MF_GAUSSMF, 2, { 1.5f, 5.0f, 0.0f, 0.0f }, 0 },
+    { FZ_MF_GAUSSMF, 2, { 1.5f, 10.0f, 0.0f, 0.0f }, 0 },
 };
 
 static const fz_mf_t tipper_in1_mf[2] = {
-    { FZ_MF_GAUSSMF, 2, { 1.5f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f } },
-    { FZ_MF_GAUSSMF, 2, { 1.5f, 10.0f, 0.0f, 0.0f, 0.0f, 0.0f } },
+    { FZ_MF_GAUSSMF, 2, { 1.5f, 0.0f, 0.0f, 0.0f }, 0 },
+    { FZ_MF_GAUSSMF, 2, { 1.5f, 10.0f, 0.0f, 0.0f }, 0 },
 };
 
 static const fz_mf_t tipper_out0_mf[3] = {
-    { FZ_MF_TRIMF, 3, { 0.0f, 5.0f, 10.0f, 0.0f, 0.0f, 0.0f } },
-    { FZ_MF_TRIMF, 3, { 10.0f, 15.0f, 20.0f, 0.0f, 0.0f, 0.0f } },
-    { FZ_MF_TRIMF, 3, { 20.0f, 25.0f, 30.0f, 0.0f, 0.0f, 0.0f } },
+    { FZ_MF_TRIMF, 3, { 0.0f, 5.0f, 10.0f, 0.0f }, 0 },
+    { FZ_MF_TRIMF, 3, { 10.0f, 15.0f, 20.0f, 0.0f }, 0 },
+    { FZ_MF_TRIMF, 3, { 20.0f, 25.0f, 30.0f, 0.0f }, 0 },
 };
 
 static const fz_var_t tipper_in[2] = {

@@ -11,13 +11,14 @@
 #ifndef FZ_NAME_LEN
 #define FZ_NAME_LEN 20 /* stored name length, including NUL */
 #endif
+/* Longest parameter list among the 13 standard membership functions: pimf,
+ * gauss2mf, dsigmf and psigmf all take 4. `linear` consequents are NOT bounded
+ * here: they carry their coefficients through fz_mf_t.lp, which points at an
+ * array of any length. Nothing here limits the number of variables, MFs or
+ * rules; those are sized by the caller's pools. */
 #ifndef FZ_MAX_MF_PARAMS
-#define FZ_MAX_MF_PARAMS 6
+#define FZ_MAX_MF_PARAMS 4
 #endif
-/* A `linear` consequent needs n_in + 1 params, so it can never address more
- * inputs than the param array allows. Keeping this derived (not a free knob)
- * is what stops an out-of-bounds read on multi-input Sugeno systems. */
-#define FZ_LINEAR_MAX_IN (FZ_MAX_MF_PARAMS - 1)
 
 typedef enum {
     FZ_MAMDANI = 0,
@@ -49,17 +50,22 @@ typedef struct {
     uint8_t type;   /* fz_mf_type_t */
     uint8_t nparam;
     float p[FZ_MAX_MF_PARAMS];
+    /* Sugeno `linear` only: coefficients [a1 .. an c], nparam of them, pointing
+     * at caller-owned storage. This is how a linear consequent gets an
+     * arbitrary number of inputs without a compile-time cap. NULL for every
+     * other MF type. */
+    const float *lp;
 } fz_mf_t;
 
 typedef struct {
     char name[FZ_NAME_LEN];
     float lo, hi;
-    uint8_t nmf;
+    uint16_t nmf;
     const fz_mf_t *mfs;
 } fz_var_t;
 
 typedef struct {
-    uint8_t n;      /* number of input slots in `ante` (== n_in of the FIS) */
+    uint16_t n;     /* number of input slots in `ante` (== n_in of the FIS) */
     uint8_t conn;   /* 1 = AND, 2 = OR */
     float weight;
     const int16_t *ante;   /* 0 omitted | sign = NOT | 2-digit fraction = hedge x0.1 */
@@ -69,12 +75,12 @@ typedef struct {
 typedef struct {
     char name[FZ_NAME_LEN];
     fz_type_t type;
-    uint8_t n_in, n_out;
+    uint16_t n_in, n_out;
     uint16_t n_rules;
     const fz_var_t *in, *out;
     const fz_rule_t *rules;
     uint8_t and_op, or_op, imp_op, agg_op, defuzz_op; /* fz_op_t / fz_defuzz_t */
-    uint8_t n_points; /* 0 -> FZ_MAX_POINTS */
+    uint16_t n_points; /* 0 -> FZ_MAX_POINTS */
 } fz_fis_t;
 
 /* Caller-owned scratch: one output's aggregated set. Never heap-allocated. */
@@ -86,6 +92,7 @@ typedef struct {
 typedef struct {
     uint16_t n_mf, n_rule, n_idx, n_ante, n_conse;
     uint16_t n_in, n_out;
+    uint16_t n_lin;  /* floats needed for `linear` consequent coefficients */
 } fz_pool_size_t;
 
 static inline uint16_t fz_npoints(const fz_fis_t *f) {

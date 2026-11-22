@@ -20,6 +20,7 @@
 static fz_mf_t mf[256];
 static fz_var_t vin[16], vout[16];
 static fz_rule_t rules[512];
+static float lin[64];
 static int16_t idx[4096];
 
 static int fails;
@@ -45,7 +46,7 @@ static int fails;
 static int parse(const char *text, fz_fis_t *fis) {
     memset(fis, 0, sizeof *fis);
     return fz_fis_parse_text(text, strlen(text) + 1, fis, mf, 256, vin, 16, vout, 16, rules, 512,
-                             idx, 4096);
+                             idx, 4096, lin, 64);
 }
 
 /* Minimal valid 1-in/1-out file; callers splice their own body in. */
@@ -252,7 +253,7 @@ int main(void) {
     {
         memset(&fis, 0, sizeof fis);
         OK(fz_fis_parse_text(HEAD, strlen(HEAD) + 1, &fis, mf, 256, vin, 16, vout, 16,
-                             rules, 0, idx, 4096),
+                             rules, 0, idx, 4096, lin, 64),
            FZ_ERR_POOL);
     }
 
@@ -278,7 +279,7 @@ int main(void) {
                 int rc;
                 memset(&f, 0, sizeof f);
                 rc = fz_fis_parse_text(mem + pg - n, n, &f, mf, 256, vin, 16, vout,
-                                       16, rules, 512, idx, 4096);
+                                       16, rules, 512, idx, 4096, lin, 64);
                 _exit(rc == FZ_ERR_ARG ? 0 : 3);
             }
             waitpid(pid, &status, 0);

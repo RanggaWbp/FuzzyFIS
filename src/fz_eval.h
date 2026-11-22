@@ -9,10 +9,10 @@
 extern "C" {
 #endif
 
-/* Decode a rule slot (scaled x10): sign -> NOT, /10 -> MF index, %10 -> hedge. */
+/* Decode a rule slot (scaled x100): sign -> NOT, /100 -> MF index, %100/10 -> hedge. */
 typedef struct {
-    uint8_t mf_index; /* 0 = omitted */
-    float hedge;      /* 0 = none, 0.5 = somewhat, 2 = very, ... */
+    uint16_t mf_index; /* 0 = omitted */
+    float hedge;       /* 0 = none, 0.5 = somewhat, 2 = very, ... */
     int not_flag;
 } fz_slot_t;
 
@@ -25,7 +25,7 @@ float fz_fuzzify(const fz_var_t *var, int16_t slot, float x);
 float fz_firing(const fz_fis_t *fis, const fz_rule_t *rule, const float *in);
 
 /* Evaluate one output index. `w` is caller scratch, reused per output. */
-float fz_eval(const fz_fis_t *fis, const float *in, uint8_t out_index, fz_work_t *w);
+float fz_eval(const fz_fis_t *fis, const float *in, uint16_t out_index, fz_work_t *w);
 
 /* Evaluate every output of the FIS into out[0..n_out-1]. */
 void fz_eval_all(const fz_fis_t *fis, const float *in, float *out, fz_work_t *w);

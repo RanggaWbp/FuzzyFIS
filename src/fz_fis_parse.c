@@ -151,6 +151,32 @@ static int name_eq_n(const char *a, const char *b, unsigned n) {
     return 1;
 }
 
+/* Does this MF line declare a `linear` type? */
+static int text_has_linear(const char *p, const char *eol) {
+    static const char key[] = "linear";
+    const char *q;
+    for (q = p; q + 6 <= eol; ++q)
+        if (name_eq_n(q, key, 6)) return 1;
+    return 0;
+}
+
+/* Number of floats inside the [] of an MF line. */
+static uint16_t count_floats(const char *p, const char *eol) {
+    const char *q = p;
+    uint16_t n = 0;
+    while (q < eol && *q != '[') ++q;
+    if (q >= eol) return 0;
+    ++q;
+    for (;;) {
+        float v;
+        while (q < eol && (*q == ' ' || *q == ',')) ++q;
+        if (q >= eol || *q == ']') break;
+        if (!read_float(&q, &v)) break;
+        ++n;
+    }
+    return n;
+}
+
 static void measure_text(const char *text, fz_pool_size_t *sz) {
     const char *p = text;
     int sec = SEC_NONE, idx_in = 0, idx_out = 0;
@@ -173,7 +199,14 @@ static void measure_text(const char *text, fz_pool_size_t *sz) {
                     if (sec == SEC_INPUT && (uint16_t)idx_in > sz->n_in) sz->n_in = (uint16_t)idx_in;
                     if (sec == SEC_OUTPUT && (uint16_t)idx_out > sz->n_out) sz->n_out = (uint16_t)idx_out;
                 } else if (sec == SEC_INPUT || sec == SEC_OUTPUT) {
-                    if (q[0] == 'M' && q[1] == 'F') ++sz->n_mf;
+                    if (q[0] == 'M' && q[1] == 'F') {
+                        ++sz->n_mf;
+                        /* a `linear` MF contributes its coefficient count */
+                        if (text_has_linear(q, eol)) {
+                            uint16_t cnt = count_floats(q, eol);
+                            sz->n_lin = (uint16_t)(sz->n_lin + cnt);
+                        }
+                    }
                 } else if (sec == SEC_RULES) {
                     ++sz->n_rule;
                 }
@@ -203,6 +236,8 @@ typedef struct {
     uint16_t n_rule, i_rule;
     int16_t *idx;
     uint16_t n_idx, i_idx;
+    float *lin;              /* `linear` consequent coefficients, any length */
+    uint16_t n_lin, i_lin;
 } ctx_t;
 
 static int parse_variable(ctx_t *c, const char **pp, int is_out) {
@@ -291,10 +326,29 @@ static int parse_variable(ctx_t *c, const char **pp, int is_out) {
                     mf->type = (uint8_t)ty;
                 }
                 if (*r == '[') {
-                    np = read_vector(&r, mf->p, FZ_MAX_MF_PARAMS);
-                    if (np < 0) return FZ_ERR_KEY;
-                    if (np > FZ_MAX_MF_PARAMS) return FZ_ERR_POOL;
-                    mf->nparam = (uint8_t)np;
+                    if (mf->type == FZ_MF_LINEAR) {
+                        /* A linear consequent is [a1 .. an c]: its length is the
+                         * number of inputs plus one, so it cannot live in the
+                         * fixed p[] and must not be capped. Read into the float
+                         * pool. */
+                        uint16_t start = c->i_lin;
+                        if (*r == '[') ++r;   /* consume the opening bracket */
+                        for (;;) {
+                            float v;
+                            while (*r && (*r == ' ' || *r == ',')) ++r;
+                            if (*r == ']' || *r == 0) { if (*r == ']') ++r; break; }
+                            if (!read_float(&r, &v)) return FZ_ERR_KEY;
+                            if (c->i_lin >= c->n_lin) return FZ_ERR_POOL;
+                            c->lin[c->i_lin++] = v;
+                        }
+                        mf->nparam = (uint16_t)(c->i_lin - start);
+                        mf->lp = &c->lin[start];
+                    } else {
+                        np = read_vector(&r, mf->p, FZ_MAX_MF_PARAMS);
+                        if (np < 0) return FZ_ERR_KEY;
+                        if (np > FZ_MAX_MF_PARAMS) return FZ_ERR_POOL;
+                        mf->nparam = (uint8_t)np;
+                    }
                 }
                 ++c->i_mf;
             }
@@ -376,7 +430,8 @@ int fz_fis_parse_text(const char *text, size_t text_len, fz_fis_t *out,
                       fz_var_t *in_pool, uint16_t n_in_pool,
                       fz_var_t *out_pool, uint16_t n_out_pool,
                       fz_rule_t *rule_pool, uint16_t n_rule_pool,
-                      int16_t *idx_pool, uint16_t n_idx) {
+                      int16_t *idx_pool, uint16_t n_idx,
+                      float *lin_pool, uint16_t n_lin) {
     ctx_t c;
     const char *p;
     fz_pool_size_t need;
@@ -457,6 +512,7 @@ int fz_fis_parse_text(const char *text, size_t text_len, fz_fis_t *out,
     c.vout = out_pool; c.n_out = (uint16_t)decl_out;
     c.rules = rule_pool; c.n_rule = n_rule_pool;
     c.idx = idx_pool; c.n_idx = n_idx;
+    c.lin = lin_pool; c.n_lin = n_lin;
 
     {
         const char *s = text;
@@ -512,7 +568,8 @@ int fz_fis_parse_file(const char *path, char *buf, unsigned buf_len,
                       fz_var_t *in_pool, uint16_t n_in_pool,
                       fz_var_t *out_pool, uint16_t n_out_pool,
                       fz_rule_t *rule_pool, uint16_t n_rule_pool,
-                      int16_t *idx_pool, uint16_t n_idx) {
+                      int16_t *idx_pool, uint16_t n_idx,
+                      float *lin_pool, uint16_t n_lin) {
     FILE *f;
     size_t n;
     if (!path || !buf || buf_len == 0) return FZ_ERR_ARG;
@@ -523,6 +580,6 @@ int fz_fis_parse_file(const char *path, char *buf, unsigned buf_len,
     buf[n] = 0;
     return fz_fis_parse_text(buf, n + 1, out, mf_pool, n_mf, in_pool, n_in_pool,
                              out_pool, n_out_pool, rule_pool, n_rule_pool,
-                             idx_pool, n_idx);
+                             idx_pool, n_idx, lin_pool, n_lin);
 }
 #endif

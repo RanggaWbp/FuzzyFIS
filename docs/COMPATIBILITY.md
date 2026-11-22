@@ -94,9 +94,42 @@ than producing a wrong number.
 | Item | Size |
 |---|---|
 | `fz_work_t` (the only runtime buffer) | 404 B |
-| `fz_fis_t` | 40 B |
-| `fz_rule_t` / `fz_var_t` / `fz_mf_t` | 24 / 40 / 28 B |
-| Whole library `.text` | 6.8 KB |
+| `fz_fis_t` | 64 B |
+| `fz_rule_t` / `fz_var_t` / `fz_mf_t` | 24 / 40 / 32 B |
+| Evaluation core, no parser | 5410 B |
+| `.fis` parser (opt-in) | 6106 B |
+| Everything | 11.5 KB |
+
+Measured on `arduino:avr:uno` with arduino-cli: `generated_static` (no parser)
+9362 B flash / 922 B RAM; `tipper_mamdani` on `mega2560` (parser on)
+21692 B flash / ~2.5 KB RAM of 8 KB.
+
+## 7. No hardcoded counts
+
+Nothing in the library caps the number of inputs, outputs, membership
+functions, rules or samples. They come from caller-owned pools and `uint16_t`
+fields. `fz_mf_t.p[4]` is not a cap: it is exactly the longest parameter list
+among the 13 standard MFs. A Sugeno `linear` consequent carries `n_inputs + 1`
+coefficients through `fz_mf_t.lp`, pointing at a caller-owned float array of any
+length, and the antecedent fold uses no scratch buffer.
+
+`tests/host/test_unbounded.c` proves it: a 12-input, 2-output, 6-MF-per-variable,
+30-rule Sugeno system with 13-coefficient consequents parses, passes the
+structural check and evaluates — under `-fsanitize=address,undefined` with no
+report.
+
+## 8. Memory-safety verification
+
+The whole suite runs clean under `-fsanitize=address,undefined`:
+
+```
+make -C tests/host CFLAGS="-std=c11 -Wall -Wextra -O1 -g \
+  -fsanitize=address,undefined -I$PWD/src" run
+```
+
+`test_parse_edges.c` additionally parses a buffer flush against a `PROT_NONE`
+guard page to prove the parser refuses an unterminated buffer instead of reading
+past its end.
 
 Allocations in `src/`: **none**. No `malloc`, `calloc`, `realloc`, `new`,
 `delete`, `std::vector`, `std::string`. External symbols required: `expf`,

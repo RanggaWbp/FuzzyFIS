@@ -25,6 +25,7 @@ static fz_var_t vin[16], vout[16];
 static fz_rule_t rules[512];
 static int16_t idx[4096];
 static fz_work_t work;
+static float lin[64];
 
 static int fails;
 
@@ -55,7 +56,7 @@ static void run_case_tol(const char *name, const char *fis_path, double step_tol
 
     rc = load(fis_path, text, sizeof text);
     if (rc < 0) { printf("  FAIL %s: cannot read %s\n", name, fis_path); ++fails; return; }
-    rc = fz_fis_parse_text(text, sizeof text, &fis, mf, 256, vin, 16, vout, 16, rules, 512, idx, 4096);
+    rc = fz_fis_parse_text(text, sizeof text, &fis, mf, 256, vin, 16, vout, 16, rules, 512, idx, 4096, lin, 64);
     if (rc != 0) { printf("  FAIL %s: parse rc=%d\n", name, rc); ++fails; return; }
     if (!fz_fis_check(&fis)) { printf("  FAIL %s: structure check\n", name); ++fails; return; }
 
@@ -150,7 +151,7 @@ int main(void) {
         fz_fis_t fis;
         if (load("tests/fis/mamdani_tip_calculator.fis", text, sizeof text) > 0) {
             int rc = fz_fis_parse_text(text, sizeof text, &fis, mf, 2 /* far too small */, vin, 16,
-                                       vout, 16, rules, 512, idx, 4096);
+                                       vout, 16, rules, 512, idx, 4096, lin, 64);
             if (rc != FZ_ERR_POOL) { printf("  FAIL tiny pool rc=%d (want %d)\n", rc, FZ_ERR_POOL); ++fails; }
         }
     }
@@ -162,7 +163,7 @@ int main(void) {
             "[Output1]\nName='y'\nRange=[0 10]\nNumMFs=1\nMF1='o':'trimf',[0 5 10]\n"
             "[Rules]\n1, 1 (1) : 1\n";
         fz_fis_t fis;
-        int rc = fz_fis_parse_text(bad, sizeof bad, &fis, mf, 256, vin, 16, vout, 16, rules, 512, idx, 4096);
+        int rc = fz_fis_parse_text(bad, sizeof bad, &fis, mf, 256, vin, 16, vout, 16, rules, 512, idx, 4096, lin, 64);
         if (rc != FZ_ERR_COUNT) { printf("  FAIL NumMFs mismatch rc=%d (want %d)\n", rc, FZ_ERR_COUNT); ++fails; }
     }
     /* Rule slot encoding: "2.2" must decode to MF 2 with exponent 2. */

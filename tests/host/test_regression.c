@@ -29,6 +29,7 @@
 #define MAX_VARS 8
 #define MAX_RULES 256
 #define MAX_IDX 4096
+#define MAX_LIN 64
 
 /* ---------------------------------------------------------------- FIS text */
 
@@ -295,6 +296,7 @@ static fz_mf_t mf_pool[MAX_MF];
 static fz_var_t in_pool[MAX_VARS], out_pool[MAX_VARS];
 static fz_rule_t rule_pool[MAX_RULES];
 static int16_t idx_pool[MAX_IDX];
+static float lin_pool[MAX_LIN];
 static fz_work_t work;
 
 static int failures;
@@ -310,7 +312,7 @@ static int run_fis(const char *label, const char *text, const float *ref,
     memset(&fis, 0, sizeof fis);
     i = fz_fis_parse_text(text, 0 /* strlen(text) */, &fis, mf_pool, MAX_MF,
                           in_pool, MAX_VARS, out_pool, MAX_VARS,
-                          rule_pool, MAX_RULES, idx_pool, MAX_IDX);
+                          rule_pool, MAX_RULES, idx_pool, MAX_IDX, lin_pool, MAX_LIN);
     if (i != 0) {
         printf("%-26s PARSE ERROR %d\n", label, i);
         failures++;

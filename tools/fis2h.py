@@ -51,7 +51,7 @@ DEFUZZ = {
     "wtaver": "FZ_DEFUZZ_WTAVER", "wtsum": "FZ_DEFUZZ_WTSUM",
 }
 DEFAULT_POINTS = 101  # section B: n_points default 101
-MAX_MF_PARAMS = 6    # fz_mf_t.p[FZ_MAX_MF_PARAMS]
+MAX_MF_PARAMS = 4    # fz_mf_t.p[FZ_MAX_MF_PARAMS]: longest standard MF list
 
 
 class FisError(Exception):
@@ -245,7 +245,7 @@ def finalize(sysd, vars_, rules, path):
             if len(mf["p"]) != want:
                 die("MF %r(%s) needs %d params, got %d"
                     % (mf["name"], mf["type"], want, len(mf["p"])), mf["lineno"], path)
-            if len(mf["p"]) > MAX_MF_PARAMS:
+            if mf["type"] != "linear" and len(mf["p"]) > MAX_MF_PARAMS:
                 die("MF %r has more params than fz_mf_t holds"
                     % mf["name"], mf["lineno"], path)
 
@@ -359,12 +359,24 @@ def emit(fis, base, name_len, points, source, warnings=None):
         for k, var in enumerate(fis[group + "puts"]):
             tag = "%s_%s%d" % (base, group, k)
             mfs = var["mfs"]
+            # `linear` coefficients go in their own arrays BEFORE the MF table:
+            # their length is n_inputs+1, so they must not live in p[] and must
+            # not be capped by MAX_MF_PARAMS.
+            for k2, mf in enumerate(mfs):
+                if mf["type"] != "linear":
+                    continue
+                w("static const float %s_lin%d[%d] = { %s };"
+                  % (tag, k2, len(mf["p"]), ", ".join(c_float(x) for x in mf["p"])))
             w("static const fz_mf_t %s_mf[%d] = {" % (tag, len(mfs)))
-            for mf in mfs:
+            for k2, mf in enumerate(mfs):
+                if mf["type"] == "linear":
+                    w("    { %s, %d, { %s }, %s_lin%d },"
+                      % (MF_TYPES[mf["type"]], len(mf["p"]), "0.0f", tag, k2))
+                    continue
                 pad = MAX_MF_PARAMS - len(mf["p"])
                 p = [c_float(x) for x in mf["p"]] + ["0.0f"] * pad
-                w("    { %s, %d, { %s } }," % (MF_TYPES[mf["type"]], len(mf["p"]),
-                                               ", ".join(p)))
+                w("    { %s, %d, { %s }, 0 }," % (MF_TYPES[mf["type"]], len(mf["p"]),
+                                                   ", ".join(p)))
             w("};")
             w("")
     for group, label in (("in", "input"), ("out", "output")):

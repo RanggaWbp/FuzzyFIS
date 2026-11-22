@@ -29,9 +29,9 @@ typedef enum { FZ_DEFUZZ_CENTROID, FZ_DEFUZZ_BISECTOR, FZ_DEFUZZ_MOM,
                FZ_DEFUZZ_SOM, FZ_DEFUZZ_LOM, FZ_DEFUZZ_WTAVER,
                FZ_DEFUZZ_WTSUM } fz_defuzz_t;
 
-typedef struct { uint8_t type; uint8_t nparam; float p[6]; } fz_mf_t;   /* FZ_MF_DEF */
-typedef struct { const char *name; float lo, hi; uint8_t nmf; const fz_mf_t *mfs; } fz_var_t;
-typedef struct { uint8_t n; uint8_t conn; /*1=AND,2=OR*/ float w;
+typedef struct { uint8_t type; uint16_t nparam; float p[4]; const float *lp; } fz_mf_t;
+typedef struct { char name[20]; float lo, hi; uint16_t nmf; const fz_mf_t *mfs; } fz_var_t;
+typedef struct { uint16_t n; uint8_t conn; /*1=AND,2=OR*/ float w;
                  const int16_t *ante;  /* SCALED x100: 0=omitted, sign=NOT, last 2 digits = hedge */
                  const int16_t *conse; } fz_rule_t;
 /* Slot encoding (int16, token scaled by 100):
@@ -47,11 +47,11 @@ typedef struct { uint8_t n; uint8_t conn; /*1=AND,2=OR*/ float w;
  * exponent 2 ("very"), and .05 is 0.5 ("somewhat"). Getting this inverted is
  * the single easiest way to silently break hedge parity.
  * x100 (not x10) is required because both 2.2 and 2.05 must be representable. */
-typedef struct { fz_type_t type;
-                 uint8_t n_in, n_out; uint16_t n_rules;
+typedef struct { char name[20]; fz_type_t type;
+                 uint16_t n_in, n_out; uint16_t n_rules;
                  const fz_var_t *in, *out; const fz_rule_t *rules;
                  uint8_t and_op, or_op, imp_op, agg_op, defuzz_op;
-                 uint8_t n_points; /* default 101 */
+                 uint16_t n_points; /* default 101 */
                } fz_fis_t;
 typedef struct { float buf[FZ_MAX_POINTS]; } fz_work_t; /* caller-owned, FZ_MAX_POINTS>=n_points */
 float fz_eval(const fz_fis_t *fis, const float *in, uint8_t out_index, fz_work_t *w);
@@ -59,6 +59,15 @@ void  fz_eval_all(const fz_fis_t *fis, const float *in, float *out, fz_work_t *w
 ```
 
 `FZ_MAX_POINTS` default 101, overridable by `-DFZ_MAX_POINTS=n`.
+
+**No hardcoded counts.** Nothing in the library caps the number of inputs,
+outputs, membership functions, rules or samples: those come from the caller's
+pools and the `uint16_t` fields above. `p[4]` is not a limit either — it is
+exactly the longest parameter list among the 13 standard MFs (pimf, gauss2mf,
+dsigmf, psigmf). A Sugeno `linear` consequent has `n_inputs + 1` coefficients and
+carries them through `fz_mf_t.lp`, pointing at a caller-owned float array of any
+length. The antecedent fold uses no scratch array, so a rule may reference any
+number of inputs.
 
 ## C. Inference order (matches toolkit exactly)
 

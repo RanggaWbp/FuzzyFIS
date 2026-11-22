@@ -52,6 +52,7 @@ static fz_rule_t rule_pool[MAX_RULES];
 static int16_t   idx_pool[MAX_IDX];
 static fz_work_t work;
 static char      text[65536];
+static float     lin_pool[256];
 
 int main(int argc, char **argv)
 {
@@ -74,7 +75,8 @@ int main(int argc, char **argv)
     memset(&fis, 0, sizeof fis);
     i = fz_fis_parse_text(text, sizeof text, &fis, mf_pool, MAX_MF,
                           in_pool, MAX_VARS, out_pool, MAX_VARS,
-                          rule_pool, MAX_RULES, idx_pool, MAX_IDX);
+                          rule_pool, MAX_RULES, idx_pool, MAX_IDX,
+                          lin_pool, MAX_LIN);
     if (i != 0) { fprintf(stderr, "parse error %d\n", i); return 3; }
 
     while (1) {

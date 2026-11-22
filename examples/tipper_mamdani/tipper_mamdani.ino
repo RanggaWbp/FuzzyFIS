@@ -67,6 +67,8 @@ static fz_var_t in_pool[4];
 static fz_var_t out_pool[4];
 static fz_rule_t rule_pool[8];
 static int16_t idx_pool[32];
+/* `linear` consequent coefficients (Sugeno). Length is n_inputs+1 per MF. */
+static float lin_pool[16];
 static fz_fis_t fis;
 static fz_work_t work;
 
@@ -92,7 +94,8 @@ void setup() {
                              in_pool, 4,
                              out_pool, 4,
                              rule_pool, 8,
-                             idx_pool, 32);
+                             idx_pool, 32,
+                             lin_pool, 16);
   if (rc != FZ_OK) {
     /* FZ_ERR_POOL means the FIS outgrew the pools above: enlarge them. */
     Serial.print(F("fz_fis_parse_text failed: "));
