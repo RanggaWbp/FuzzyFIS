@@ -18,20 +18,39 @@ same formulas (verified: same defaults 101 sample points, same operators, same M
 
 ```c
 typedef enum { FZ_MAMDANI = 0, FZ_SUGENO = 1 } fz_type_t;
-typedef enum { FZ_TRIMF, FZ_TRAPMF, FZ_GAUSSMF, FZ_GAUSS2MF, FZ_GBELLMF,
-               FZ_SIGMF, FZ_DSIGMF, FZ_PSIGMF, FZ_ZMF, FZ_SMF, FZ_PIMF,
-               FZ_LINSMF, FZ_LINZMF, FZ_CONSTANT, FZ_LINEAR } fz_mf_type_t;
-typedef enum { FZ_MIN, FZ_MAX, FZ_PROD, FZ_SUM, FZ_PROBOR,
-               FZ_ALGEBRAIC_PRODUCT /*==prod*/, FZ_ALGEBRAIC_SUM, FZ_BOUNDED_SUM,
-               FZ_EINSTEIN_PRODUCT, FZ_EINSTEIN_SUM, FZ_HAMACHER_PRODUCT,
-               FZ_HAMACHER_SUM } fz_op_t;
-typedef enum { FZ_DEFUZZ_CENTROID, FZ_DEFUZZ_BISECTOR, FZ_DEFUZZ_MOM,
-               FZ_DEFUZZ_SOM, FZ_DEFUZZ_LOM, FZ_DEFUZZ_WTAVER,
-               FZ_DEFUZZ_WTSUM } fz_defuzz_t;
 
-typedef struct { uint8_t type; uint16_t nparam; float p[4]; const float *lp; } fz_mf_t;
-typedef struct { char name[20]; float lo, hi; uint16_t nmf; const fz_mf_t *mfs; } fz_var_t;
-typedef struct { uint16_t n; uint8_t conn; /*1=AND,2=OR*/ float w;
+typedef enum {
+    FZ_MF_TRIMF = 0, FZ_MF_TRAPMF, FZ_MF_GAUSSMF, FZ_MF_GAUSS2MF, FZ_MF_GBELLMF,
+    FZ_MF_SIGMF, FZ_MF_DSIGMF, FZ_MF_PSIGMF, FZ_MF_ZMF, FZ_MF_SMF, FZ_MF_PIMF,
+    FZ_MF_LINSMF, FZ_MF_LINZMF, FZ_MF_CONSTANT, FZ_MF_LINEAR, FZ_MF_COUNT
+} fz_mf_type_t;
+
+/* Operator ids. Fold order is caller-vector order (MATLAB prod/sum order). */
+typedef enum {
+    FZ_OP_MIN = 0, FZ_OP_MAX, FZ_OP_PROD, FZ_OP_SUM, FZ_OP_PROBOR,
+    FZ_OP_ALGEBRAIC_PRODUCT, FZ_OP_ALGEBRAIC_SUM, FZ_OP_BOUNDED_SUM,
+    FZ_OP_EINSTEIN_PRODUCT, FZ_OP_EINSTEIN_SUM, FZ_OP_HAMACHER_PRODUCT,
+    FZ_OP_HAMACHER_SUM, FZ_OP_COUNT
+} fz_op_t;
+
+typedef enum {
+    FZ_DEFUZZ_CENTROID = 0, FZ_DEFUZZ_BISECTOR, FZ_DEFUZZ_MOM, FZ_DEFUZZ_SOM,
+    FZ_DEFUZZ_LOM, FZ_DEFUZZ_WTAVER, FZ_DEFUZZ_WTSUM,
+    FZ_DEFUZZ_CENTROID_INTEGRAL, /* reference-toolkit extension, not a MATLAB method */
+    FZ_DEFUZZ_COUNT
+} fz_defuzz_t;
+
+typedef struct {
+    uint8_t type;                 /* fz_mf_type_t */
+    uint8_t nparam;
+    float p[FZ_MAX_MF_PARAMS];    /* longest standard MF list is 4 */
+    const float *lp;              /* `linear` only: [a1..an c], caller-owned */
+} fz_mf_t;
+
+typedef struct { char name[FZ_NAME_LEN]; float lo, hi; uint16_t nmf;
+                 const fz_mf_t *mfs; } fz_var_t;
+
+typedef struct { uint16_t n; uint8_t conn; /*1=AND,2=OR*/ float weight;
                  const int16_t *ante;  /* SCALED x100: 0=omitted, sign=NOT, last 2 digits = hedge */
                  const int16_t *conse; } fz_rule_t;
 /* Slot encoding (int16, token scaled by 100):
@@ -47,13 +66,21 @@ typedef struct { uint16_t n; uint8_t conn; /*1=AND,2=OR*/ float w;
  * exponent 2 ("very"), and .05 is 0.5 ("somewhat"). Getting this inverted is
  * the single easiest way to silently break hedge parity.
  * x100 (not x10) is required because both 2.2 and 2.05 must be representable. */
-typedef struct { char name[20]; fz_type_t type;
+
+typedef struct { char name[FZ_NAME_LEN]; fz_type_t type;
                  uint16_t n_in, n_out; uint16_t n_rules;
                  const fz_var_t *in, *out; const fz_rule_t *rules;
                  uint8_t and_op, or_op, imp_op, agg_op, defuzz_op;
-                 uint16_t n_points; /* default 101 */
+                 uint16_t n_points; /* 0 -> FZ_MAX_POINTS */
                } fz_fis_t;
-typedef struct { float buf[FZ_MAX_POINTS]; } fz_work_t; /* caller-owned, FZ_MAX_POINTS>=n_points */
+
+typedef struct { float buf[FZ_MAX_POINTS]; } fz_work_t; /* caller-owned */
+
+typedef struct { uint16_t n_mf, n_rule, n_idx, n_ante, n_conse;
+                 uint16_t n_in, n_out;
+                 uint16_t n_lin;   /* floats for `linear` coefficients */
+               } fz_pool_size_t;
+```
 float fz_eval(const fz_fis_t *fis, const float *in, uint8_t out_index, fz_work_t *w);
 void  fz_eval_all(const fz_fis_t *fis, const float *in, float *out, fz_work_t *w);
 ```
