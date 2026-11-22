@@ -1,6 +1,6 @@
 {
   "name": "FuzzyFIS",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "description": "MATLAB-compatible fuzzy inference (Mamdani and Sugeno) for microcontrollers. Zero heap, no exceptions, float32.",
   "keywords": [
     "fuzzy",
