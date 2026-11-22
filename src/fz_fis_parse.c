@@ -23,6 +23,7 @@ static const char *skip_blanks(const char *p) {
 }
 
 static int name_eq(const char *a, const char *b) {
+    /* Case-insensitive compare, so "Name" and "name" are the same key. */
     while (*a && *b) {
         char ca = *a, cb = *b;
         if (ca >= 'A' && ca <= 'Z') ca = (char)(ca + 32);
@@ -52,6 +53,7 @@ static void copy_token(const char *p, char *dst, unsigned n) {
     dst[i] = 0;
 }
 
+/* Scan an integer token. Returns 1 and stores into *out on success, 0 if no digits. */
 static int read_int(const char **pp, long *out) {
     const char *p = skip_blanks(*pp);
     int neg = 0;
@@ -65,6 +67,7 @@ static int read_int(const char **pp, long *out) {
     return 1;
 }
 
+/* Scan a float token with optional sign, fraction and exponent. Returns 1 on success. */
 static int read_float(const char **pp, fz_real_t *out) {
     const char *p = skip_blanks(*pp);
     int neg = 0, any = 0;
@@ -139,6 +142,7 @@ static int read_slot(const char **pp, int16_t *out) {
 
 typedef enum { SEC_NONE = 0, SEC_SYSTEM, SEC_INPUT, SEC_OUTPUT, SEC_RULES } sec_t;
 
+/* Compare first n chars case-insensitively; stop early on NUL. Used for section header names. */
 static int name_eq_n(const char *a, const char *b, unsigned n) {
     unsigned i;
     for (i = 0; i < n; ++i) {
@@ -176,6 +180,9 @@ static uint16_t count_floats(const char *p, const char *eol) {
     }
     return n;
 }
+
+/* One cheap pass over the text to count how many MF / rule / index slots a
+ * caller must reserve, without building any tables. */
 
 static void measure_text(const char *text, fz_pool_size_t *sz) {
     const char *p = text;
@@ -240,6 +247,8 @@ typedef struct {
     uint16_t n_lin, i_lin;
 } ctx_t;
 
+/* Parse the body of one [Input#]/[Output#] section into a variable: its name,
+ * range, and each membership function line. Returns FZ_OK or an error code. */
 static int parse_variable(ctx_t *c, const char **pp, int is_out) {
     const char *p = *pp;
     fz_var_t *v;
@@ -364,6 +373,9 @@ static int parse_variable(ctx_t *c, const char **pp, int is_out) {
     return FZ_OK;
 }
 
+/* Parse the [Rules] section: each line decodes to an antecedent map, a
+ * consequent map, an optional weight in parens, and an optional connector after
+ * a colon. Antecedent/consequent slots go into the contiguous idx pool. */
 static int parse_rules(ctx_t *c, const char **pp) {
     const char *p = *pp;
     while (*p) {
@@ -424,6 +436,11 @@ static int parse_rules(ctx_t *c, const char **pp) {
     *pp = p;
     return FZ_OK;
 }
+
+/* Parse a full .fis text into `out` using caller-supplied pools. First scans
+ * [System] for type and operator settings, then each [Input#]/[Output#]
+ * section, then [Rules]. On any failure a negative code is returned and
+ * `out` must be treated as invalid. */
 
 int fz_fis_parse_text(const char *text, size_t text_len, fz_fis_t *out,
                       fz_mf_t *mf_pool, uint16_t n_mf,
@@ -562,6 +579,8 @@ int fz_fis_parse_text(const char *text, size_t text_len, fz_fis_t *out,
 }
 
 #ifndef ARDUINO
+/* Host helper: slurp a .fis file into the caller-provided buffer, NUL-terminate
+ * it, and pass it to the text parser. */
 int fz_fis_parse_file(const char *path, char *buf, unsigned buf_len,
                       fz_fis_t *out,
                       fz_mf_t *mf_pool, uint16_t n_mf,

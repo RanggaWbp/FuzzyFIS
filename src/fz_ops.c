@@ -2,26 +2,32 @@
 #include "fz_ops.h"
 #include <string.h>
 
+/* Apply one binary operator to a pair of truth values. Result domain is
+ * [0,1] for every operator except SUM (unbounded). The degenerate-divisor
+ * cases (einstein/hamacher) return 0 when the denominator vanishes, matching
+ * the reference instead of producing NaN. */
 static fz_real_t fz_pair(uint8_t op, fz_real_t a, fz_real_t b) {
     switch (op) {
-    case FZ_OP_MIN: return (a < b) ? a : b;
-    case FZ_OP_MAX: return (a > b) ? a : b;
+    case FZ_OP_MIN: return (a < b) ? a : b;                    /* t-norm: min */
+    case FZ_OP_MAX: return (a > b) ? a : b;                    /* s-norm: max */
     case FZ_OP_PROD:
-    case FZ_OP_ALGEBRAIC_PRODUCT: return a * b;
-    case FZ_OP_SUM: return a + b;
+    case FZ_OP_ALGEBRAIC_PRODUCT: return a * b;                /* algebraic product */
+    case FZ_OP_SUM: return a + b;                              /* bounded only by caller */
     case FZ_OP_PROBOR:
-    case FZ_OP_ALGEBRAIC_SUM: return a + b - a * b;
+    case FZ_OP_ALGEBRAIC_SUM: return a + b - a * b;            /* probabilistic sum */
     case FZ_OP_BOUNDED_SUM: { fz_real_t s = a + b; return (s > 1.0f) ? 1.0f : s; }
     case FZ_OP_EINSTEIN_PRODUCT: { fz_real_t d = 2.0f - (a + b - a * b); return (d == 0.0f) ? 0.0f : (a * b) / d; }
     case FZ_OP_EINSTEIN_SUM: { fz_real_t d = 1.0f + a * b; return (d == 0.0f) ? 0.0f : (a + b) / d; }
     case FZ_OP_HAMACHER_PRODUCT: { fz_real_t d = a + b - a * b; return (d == 0.0f) ? 0.0f : (a * b) / d; }
     case FZ_OP_HAMACHER_SUM: { fz_real_t d = 1.0f - a * b; if (d == 0.0f) return (a == 1.0f && b == 1.0f) ? 1.0f : 0.0f; return (a + b - 2.0f * a * b) / d; }
-    default: return 0.0f;
+    default: return 0.0f;                                      /* unknown op: neutral */
     }
 }
 
 fz_real_t fz_op2(uint8_t op, fz_real_t a, fz_real_t b) { return fz_pair(op, a, b); }
 
+/* Fold an operator over an array left-to-right. Used by fz_eval when an
+ * antecedent has more than one clause and by the WTAVER/WTSUM helpers. */
 fz_real_t fz_op_fold(uint8_t op, const fz_real_t *v, uint8_t n) {
     uint8_t i;
     fz_real_t acc;
@@ -33,6 +39,9 @@ fz_real_t fz_op_fold(uint8_t op, const fz_real_t *v, uint8_t n) {
 
 static int fz_eq(const char *a, const char *b) { return strcmp(a, b) == 0; }
 
+/* Map a .fis operator name to its id. Names come from MATLAB's Fuzzy Logic
+ * Toolbox (e.g. "min", "probor", "algebraic_product"). Two names have no
+ * native operator in this library, so they degrade to `min`: */
 int fz_op_from_name(const char *name) {
     if (!name) return -1;
     if (fz_eq(name, "min")) return FZ_OP_MIN;
@@ -52,6 +61,7 @@ int fz_op_from_name(const char *name) {
     return -1;
 }
 
+/* Map a .fis defuzzification method name to its id. */
 int fz_defuzz_from_name(const char *name) {
     if (!name) return -1;
     if (fz_eq(name, "centroid")) return FZ_DEFUZZ_CENTROID;
@@ -65,6 +75,7 @@ int fz_defuzz_from_name(const char *name) {
     return -1;
 }
 
+/* Map a .fis membership-function name to its id. */
 int fz_mf_type_from_name(const char *name) {
     if (!name) return -1;
     if (fz_eq(name, "trimf")) return FZ_MF_TRIMF;
