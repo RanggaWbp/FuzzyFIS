@@ -79,3 +79,19 @@ tools/run_oracle.sh tests/golden/hedges.fis tests/golden/hedges.in.txt 101 /tmp/
 
 `tools/oracle.m` and `tools/run_oracle.sh` default to the patched path, so a
 regeneration cannot silently pick up the unpatched toolkit.
+
+## Relocating the tools
+
+`tools/run_oracle.sh` looks for Octave and the patched toolkit next to the
+checkout (`../tools/octenv`, `../tools/flt-oracle`), because that is how this
+workspace is laid out on the external drive. It falls back to `/var/tmp` if
+those are missing. Override either path explicitly:
+
+```sh
+OCTAVE_BIN=/path/to/octave-cli FLT_PATH=/path/to/patched/inst \
+  tools/run_oracle.sh model.fis inputs.txt
+```
+
+Octave needs `OCTAVE_HOME` set to its environment prefix; the script exports it.
+Invoking the bare `octave` binary without it makes `isequal` and friends
+undefined, which surfaces as a `readfis` failure rather than an Octave error.

@@ -17,11 +17,21 @@ FIS=$(cd "$(dirname "$1")" && pwd)/$(basename "$1")
 IN=$(cd "$(dirname "$2")" && pwd)/$(basename "$2")
 N=${3:-101}
 
-# micromamba env that carries the toolkit under Octave 10.3
-MAMBA=${MAMBA:-/home/ranggawbp/.hermes/cache/scratch/mm/bin/micromamba}
-ENV=${OCTAVE_ENV:-/var/tmp/octenv}
-OCTAVE=${OCTAVE_BIN:-}
-export FLT_PATH=${FLT_PATH:-/var/tmp/flt-oracle/inst}
+# Octave comes from a relocatable conda env alongside the repo when it exists,
+# so the checkout carries its own oracle and does not depend on the host's
+# package manager. FLT_PATH points at the PATCHED toolkit (tools/patch-oracle.sh).
+REPO=$(cd "$HERE/.." && pwd)
+ENV=${OCTAVE_ENV:-$REPO/../../tools/octenv}
+[ -d "$ENV" ] || ENV=${OCTAVE_ENV:-/var/tmp/octenv}
+OCTAVE=${OCTAVE_BIN:-$ENV/bin/octave-cli-10.3.0}
+export OCTAVE_HOME=${OCTAVE_HOME:-$ENV}
+export FLT_PATH=${FLT_PATH:-$REPO/../../tools/flt-oracle/inst}
+
+if [ ! -x "$OCTAVE" ]; then
+  echo "run_oracle: no Octave at $OCTAVE" >&2
+  echo "  set OCTAVE_BIN, or install the env: see docs/README.md" >&2
+  exit 3
+fi
 
 OUT=''
 DETAIL=''
@@ -34,7 +44,4 @@ fi
 
 CALL="addpath('$HERE'); oracle('$FIS','$IN',$N,'$OUT','$DETAIL')"
 
-if [ -n "$OCTAVE" ]; then
-  exec "$OCTAVE" --no-gui --quiet --eval "$CALL"
-fi
-exec "$MAMBA" run -p "$ENV" octave --no-gui --quiet --eval "$CALL"
+exec "$OCTAVE" --no-gui --quiet --eval "$CALL"

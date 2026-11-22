@@ -106,8 +106,8 @@ Measured with arduino-cli, same two examples, every supported architecture:
 |---|---|---|
 | `arduino:avr:uno` | 9362 B flash / 922 B RAM | parser disabled (2 KB SRAM) |
 | `arduino:avr:mega` | 9808 B | 21692 B / 2510 B of 8 KB |
-| `esp8266:esp8266:nodemcuv2` | see the CI matrix | parser on (80 KB RAM) |
-| `esp32:esp32:esp32` | see the CI matrix | parser on |
+| `esp8266:esp8266:nodemcuv2` | 246360 B flash / 28944 B RAM of 80192 | 252300 B / 30576 B |
+| `esp32:esp32:esp32` | see the CI matrix (not built on this host) | parser on |
 | `STMicroelectronics:stm32:GenF4` | 20752 B / 1656 B | 26576 B / 2632 B of 128 KB |
 
 The parser is switched on automatically for anything that is not a small AVR
