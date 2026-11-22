@@ -153,3 +153,16 @@ skip the grid entirely and cost a few hundred nanoseconds.
 On an AVR at 16 MHz expect roughly 250-400 us per evaluation: fine for control
 loops at tens of Hz, not for kHz-class work. Lower `FZ_MAX_POINTS` (with the
 measured accuracy cost) or use Sugeno when that matters.
+
+## 10. Example sketches, measured against the oracle
+
+The three `examples/` FIS models are parity-checked too, over an 11x11 grid:
+
+| Example | Type | max rel |
+|---|---|---|
+| `tipper_mamdani` | Mamdani centroid | 3.6e-6 |
+| `tipper_sugeno` | Sugeno wtaver | 1.2e-7 |
+| `generated_static` | Mamdani centroid (codegen) | 3.6e-6 |
+
+`tipper_mamdani` and `generated_static` share the same model, which is the point:
+the generated header and the runtime parser produce bit-identical results.
