@@ -56,6 +56,12 @@ Tipper model: 2 inputs, 1 output, 3 rules.
 | `arduino:avr:mega` | 9784 B | 21 772 B |
 | `esp8266:nodemcuv2` | 246 360 B / 28 944 B of 80 192 | 252 300 B / 30 576 B |
 | `STM32F4` | 20 752 B / 1656 B of 131 072 | 26 576 B / 2632 B |
+| `STM32F103` (Cortex-M3, no FPU) | 13 614 B / 1472 B | 13 614 B / 1472 B |
+
+`STM32F103` row measured by `make -C tests/stm32f103 run`
+(`arm-none-eabi-gcc 14.2.1`, newlib-nano, `-mcpu=cortex-m3 -mthumb`,
+soft-float) — same evaluator + parser, mini 1-input model, not the Tipper model
+used by the arduino-cli rows. Flash `.text`, RAM `.data+.bss`.
 
 Speed on x86-64 `-O2`: **3.0 µs per evaluation** (~330 000/s) for that model.
 Sugeno skips the sample grid and costs a few hundred nanoseconds.
