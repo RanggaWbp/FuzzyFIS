@@ -1,155 +1,330 @@
-# fz
+# FuzzyFIS
 
-MATLAB-compatible fuzzy inference for microcontrollers. Mamdani and Sugeno,
-`float32`, no heap, no exceptions, no RTTI. Same membership functions, operators
-and inference order as the MATLAB Fuzzy Logic Toolbox, so a FIS you tuned in
-MATLAB runs on a 2 KB AVR without retuning. Verified on AVR, ESP8266, ESP32
-and STM32.
+**MATLAB-compatible fuzzy inference for microcontrollers** — Mamdani and Sugeno,
+`float32`, zero heap, no exceptions. A `.fis` file you tuned in the MATLAB Fuzzy
+Logic Toolbox runs on a 2 KB ATmega328P without retuning anything.
 
-- Static FIS tables in flash (`.rodata`), generated at build time from a `.fis` file.
-- Or parse a `.fis` file at runtime where RAM allows (host, ESP8266, ESP32, STM32).
-- Deterministic: fixed sample count, fixed fold order, no allocation in `fz_eval`.
+[![CI](https://img.shields.io/github/actions/workflow/status/RanggaWbp/FuzzyFIS/ci.yml?branch=main&label=CI)](../../actions)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Arduino](https://img.shields.io/badge/Arduino-avr%20%7C%20esp8266%20%7C%20esp32%20%7C%20stm32-00979D)](https://www.arduino.cc)
+[![C++11](https://img.shields.io/badge/C%2B%2B-11-00599C)](#)
 
-## Guarantees, measured
+---
 
-- **No hardcoded counts.** Inputs, outputs, membership functions, rules and
-  sample points are sized by your pools, not by the library. `fz_mf_t.p[4]` is
-  the longest standard MF parameter list (pimf/gauss2mf/dsigmf/psigmf), not a
-  cap; Sugeno `linear` consequents carry `n_inputs+1` coefficients through a
-  caller-owned float array. `tests/host/test_unbounded.c` proves it with a
-  12-input, 30-rule system under ASan+UBSan.
-- **No heap.** Nothing in `src/` allocates. The only runtime buffer is
-  `fz_work_t`, 404 bytes.
-- **Parity with MATLAB**, not with another Arduino library: worst relative
-  error 1.4e-6 over 13 reference fixtures (bisector is grid-quantised and
-  declared as such). `docs/COMPATIBILITY.md` has the table.
-- **Footprint**: 5.4 KB evaluation core; the `.fis` parser adds 6.1 KB and is
-  opt-in. `arduino:avr:uno` with a generated FIS: 9362 B flash, 922 B RAM.
-- **Speed**: 3.0 us per evaluation for a 2-input/3-rule Mamdani FIS on x86-64
-  `-O2`; Sugeno skips the sample grid entirely.
+## Why this exists
+
+The Arduino fuzzy libraries available today support triangle/trapezoid
+membership functions, centroid defuzzification, Mamdani only — and they compute
+the centroid over a domain *you* choose. MATLAB computes it over a fixed
+101-point `linspace` of the output range. That single difference is enough to
+make the numbers disagree, which means a controller tuned in MATLAB needs
+retuning on the device.
+
+FuzzyFIS closes that gap by treating MATLAB behaviour as a specification, not an
+inspiration: same 13 membership functions, same operators, same fold order, same
+sample grid, same defaults.
+
+**Measured, not claimed:** the worst relative difference against a
+MATLAB-compatible oracle across 14 reference systems is **1.4 × 10⁻⁶** — float32
+rounding, nothing else. The full table is in
+[`docs/COMPATIBILITY.md`](docs/COMPATIBILITY.md).
+
+---
+
+## What's inside
+
+| | |
+|---|---|
+| **Inference systems** | Mamdani, Sugeno (zero-order and first-order) |
+| **Defuzzification** | `centroid` `bisector` `mom` `som` `lom` `wtaver` `wtsum` `centroid_integral` |
+| **Membership functions** | `trimf` `trapmf` `gaussmf` `gauss2mf` `gbellmf` `sigmf` `dsigmf` `psigmf` `zmf` `smf` `pimf` `linsmf` `linzmf` + `constant` `linear` |
+| **Operators** | AND/OR: `min` `max` `prod` `probor` `sum` `algebraic_*` `bounded_sum` `einstein_*` `hamacher_*`<br>Implication: `min` `prod`<br>Aggregation: `max` `sum` `probor` |
+| **Rules** | weights, `NOT` (negative index), hedges (`somewhat` `very` `extremely` `very very`), per-rule AND/OR |
+| **Structure** | any number of inputs, outputs, membership functions, rules |
+| **Memory** | no `malloc`, no `new`, no `std::` — one 404-byte work buffer |
+| **Platforms** | AVR, ESP8266, ESP32, STM32, and anything with a C99 compiler |
+
+### Footprint, measured with `arduino-cli`
+
+Tipper model: 2 inputs, 1 output, 3 rules.
+
+| Board | Static FIS (no parser) | Runtime `.fis` parser |
+|---|---|---|
+| `arduino:avr:uno` | 9338 B flash / 878 B RAM of 2048 | parser disabled (2 KB SRAM) |
+| `arduino:avr:mega` | 9784 B | 21 772 B |
+| `esp8266:nodemcuv2` | 246 360 B / 28 944 B of 80 192 | 252 300 B / 30 576 B |
+| `STM32F4` | 20 752 B / 1656 B of 131 072 | 26 576 B / 2632 B |
+
+Speed on x86-64 `-O2`: **3.0 µs per evaluation** (~330 000/s) for that model.
+Sugeno skips the sample grid and costs a few hundred nanoseconds.
+
+---
 
 ## Install
 
-Arduino IDE / Arduino CLI: copy or symlink this directory into `~/Arduino/libraries/fz`
-(or use *Sketch → Include Library → Add .ZIP Library*). `architectures=*`.
+### Arduino IDE
 
-PlatformIO (`platformio.ini`):
+**Library Manager** — search *FuzzyFIS*, or:
 
-```ini
-lib_deps = symlink://path/to/embedded-fuzzy
-```
+1. Download the [latest release](../../releases/latest) `.zip`
+2. *Sketch → Include Library → Add .ZIP Library…*
+3. Pick the zip. The examples appear under *File → Examples → FuzzyFIS*.
 
-`library.json` points at `src/` and exports only `src/`, so tools and tests
-do not end up on the device.
-
-## Quick start: generated (static) FIS
-
-Write `tipper.fis`, then generate a header at build time:
+**Manual** — clone into your sketchbook:
 
 ```sh
-python3 tools/fis2h.py examples/generated_static/tipper.fis -o tipper_fis.h
+git clone https://github.com/RanggaWbp/FuzzyFIS.git ~/Arduino/libraries/FuzzyFIS
+```
+
+### PlatformIO
+
+```ini
+[env:esp32dev]
+platform = espressif32
+board = esp32dev
+framework = arduino
+lib_deps = https://github.com/RanggaWbp/FuzzyFIS.git
+```
+
+### Arduino CLI
+
+```sh
+arduino-cli lib install --git-url https://github.com/RanggaWbp/FuzzyFIS.git
+```
+
+`architectures=*`, so no board-specific flags are needed.
+
+---
+
+## Two ways to load a FIS
+
+### A. Generated header — recommended for AVR
+
+Turn the `.fis` into a `static const` table at build time. Costs flash, not RAM.
+
+```sh
+python3 tools/fis2h.py tipper.fis -o tipper_fis.h
 ```
 
 ```cpp
-#include <fz.h>
-#include "tipper_fis.h"
+#include <FuzzyFIS.h>
+#include "tipper_fis.h"      // defines fz_fis_tipper
 
 static fz_work_t work;
 
+void setup() { Serial.begin(115200); }
+
 void loop() {
-  const float in[2] = {service, food};
+  const float in[2] = { service, food };   // 0..10 each
   float tip[1];
   fz_eval_all(&fz_fis_tipper, in, tip, &work);
   Serial.println(tip[0], 3);
+  delay(500);
 }
 ```
 
-Everything the FIS needs is `static const`, so it costs flash, not RAM. This is
-the only variant that fits an ATmega328P comfortably.
+### B. Runtime `.fis` — for boards with RAM to spare
 
-## Quick start: runtime `.fis`
+The parser fills caller-owned pools. It never allocates.
 
 ```cpp
-#include <fz.h>
+#include <FuzzyFIS.h>
 
+static const char FIS_TEXT[] =
+  "[System]\nName='tipper'\nType='mamdani'\nNumInputs=2\nNumOutputs=1\n"
+  "NumRules=3\nAndMethod='min'\nOrMethod='max'\nImpMethod='min'\n"
+  "AggMethod='max'\nDefuzzMethod='centroid'\n"
+  /* … [Input1] [Input2] [Output1] [Rules] … */;
+
+/* Budget these against your SRAM before choosing this path. */
 static fz_mf_t   mf_pool[16];
 static fz_var_t  in_pool[4], out_pool[4];
 static fz_rule_t rule_pool[8];
-static int16_t   idx_pool[32];   /* all rule slots, contiguous */
+static int16_t   idx_pool[32];   // all rule slots, contiguous
+static float     lin_pool[16];   // Sugeno `linear` coefficients
 static fz_fis_t  fis;
 static fz_work_t work;
 
-int rc = fz_fis_parse_text(text, &fis,
-                           mf_pool, 16, in_pool, 4, out_pool, 4,
-                           rule_pool, 8, idx_pool, 32);
-if (rc != FZ_OK) { /* FZ_ERR_POOL means a pool is too small */ }
+void setup() {
+  int rc = fz_fis_parse_text(FIS_TEXT, sizeof FIS_TEXT, &fis,
+                             mf_pool, 16,
+                             in_pool, 4, out_pool, 4,
+                             rule_pool, 8, idx_pool, 32, lin_pool, 16);
+  if (rc != FZ_OK) { /* see FZ_ERR_* below */ return; }
+  if (!fz_fis_check(&fis)) { /* indices out of range */ return; }
+}
 ```
 
-Pools are caller-owned; the parser never allocates. `fz_fis_parse_file(path, ...)`
-is host-only (`#ifndef ARDUINO`) and needs a caller-supplied text buffer. Error
-codes are `FZ_ERR_*` in `fz_fis_parse.h`. One `fz_mf_t` is 28 bytes, so budget the
-pools against your SRAM before choosing this path.
+Pools can be sized without guessing — do a counting pass first:
 
-`fz.h` includes the parser when `ARDUINO` is defined **or** `FZ_ENABLE_PARSER` is
-set, and sets `FZ_ARDUINO_SAFE` automatically on AVR parts under 4 KB SRAM, which
-turns the parser off. Check `FZ_HAS_PARSER` if you need to branch.
+```cpp
+fz_pool_size_t need;
+fz_fis_measure(FIS_TEXT, &need);
+// need.n_mf, need.n_in, need.n_out, need.n_rule, need.n_idx, need.n_lin
+```
 
-## Evaluation
+On a board that can read files, `fz_fis_parse_file(path, buf, len, …)` is the
+same call with a caller-supplied buffer. It is compiled out under `ARDUINO`.
+
+---
+
+## API
 
 ```c
-float fz_eval(const fz_fis_t *fis, const float *in, uint8_t out_index, fz_work_t *w);
-void  fz_eval_all(const fz_fis_t *fis, const float *in, float *out, fz_work_t *w);
+/* Evaluate. `w` is scratch; Mamdani uses it, Sugeno ignores it. */
+float fz_eval    (const fz_fis_t *fis, const float *in, uint16_t out_index, fz_work_t *w);
+void  fz_eval_all(const fz_fis_t *fis, const float *in, float *out,         fz_work_t *w);
+
+/* Load. */
+int   fz_fis_parse_text(const char *text, size_t text_len, fz_fis_t *out, /* … pools … */);
+int   fz_fis_check     (const fz_fis_t *fis);        /* 1 = structurally sound */
+void  fz_fis_measure   (const char *text, fz_pool_size_t *out);
+
+/* Pieces, if you want them. */
+float fz_mf_eval  (uint8_t type, const float *p, float x, float hedge, int not_flag);
+float fz_op2      (uint8_t op, float a, float b);
+float fz_op_fold  (uint8_t op, const float *v, uint8_t n);
+float fz_defuzz   (uint8_t method, float lo, float hi, const float *ys,
+                   uint16_t n, float fallback);
+void  fz_linspace (float lo, float hi, float *dst, uint16_t n);
 ```
 
-`fz_work_t` holds `FZ_MAX_POINTS` floats (default 101, override with
-`-DFZ_MAX_POINTS=n`). It is scratch space for the aggregated Mamdani output;
-Sugeno does not touch it. `fz_eval` returns `NaN` for Sugeno when no rule fires
-(`den == 0`), matching MATLAB.
+### Error codes
 
-`fz_fis_t.n_points` is the grid size; `0` means "use `FZ_MAX_POINTS`". Sample
-points must match MATLAB, which defaults to 101 — that is what `fis2h.py` emits.
-Lower it to trade accuracy for time on slow targets; keep 101 for parity work.
-The generated header refuses to compile when `FZ_MAX_POINTS` is smaller than the
-`n_points` it asks for, so a short work buffer cannot silently shrink the grid.
+| Code | Meaning |
+|---|---|
+| `FZ_OK` | success |
+| `FZ_ERR_ARG` | null pointer, or the buffer is not NUL-terminated within `text_len` |
+| `FZ_ERR_SECTION` | missing `[System]` / `[Input#]` / `[Output#]` / `[Rules]` |
+| `FZ_ERR_KEY` | unparsable key or value |
+| `FZ_ERR_POOL` | a caller pool is too small |
+| `FZ_ERR_RULE` | rule line does not match the grammar |
+| `FZ_ERR_TYPE` | unknown FIS type, MF type, or operator name |
+| `FZ_ERR_COUNT` | `NumInputs`/`NumOutputs`/`NumMFs`/`NumRules` disagree with content |
 
-## Codegen contract
+A failed parse leaves `out` unusable — treat it as an error, not a partial load.
 
-`tools/fis2h.py` reads a `.fis` file (sections `[System]`, `[Input#]`,
-`[Output#]`, `[Rules]`) and emits `static const` MF/var/rule tables plus
-`fz_fis_<name>`. Names are sanitized to C identifiers, strings truncated to
-`FZ_NAME_LEN - 1` characters (default 20), and a `FZ_<NAME>_MAX_POINTS` hint is
-emitted when the FIS needs more than the default sample count.
+---
+
+## Configuration
+
+| Macro | Default | Effect |
+|---|---|---|
+| `FZ_MAX_POINTS` | `101` | Sample grid size. Must be ≥ the FIS `n_points`. MATLAB's default is 101; lower it only when you accept the accuracy cost. |
+| `FZ_NAME_LEN` | `20` | Stored variable-name length, including the terminator. |
+| `FZ_MAX_MF_PARAMS` | `4` | Longest standard MF parameter list. Not a policy cap: `linear` consequents carry their coefficients out of band. |
+| `FZ_ENABLE_PARSER` | auto | Force the `.fis` parser on or off. |
+| `FZ_HAS_PARSER` | derived | Always defined as `0` or `1` — branch with `#if FZ_HAS_PARSER`. |
+
+The parser is compiled in for every non-AVR Arduino core, and switched off
+automatically on AVR parts with less than 4 KB SRAM (`RAMEND < 0x1000`).
+
+---
+
+## Mental model
+
+```
+fuzzify -> firing strength -> implication -> aggregation -> defuzzify
+```
+
+- **Mamdani** materialises a sampled output set per rule and aggregates sets.
+- **Sugeno** computes one (location, height) singleton per rule and takes a
+  weighted average. It ignores the file's implication/aggregation: MATLAB
+  hard-codes `prod`/`sum` there.
+
+Aggregation is **streamed per rule**, so no `rules × points` matrix ever exists.
+That is what makes a 101-point grid viable on an 8-bit MCU: the only buffer is
+one output's aggregated set.
+
+---
+
+## Codegen
+
+`tools/fis2h.py` reads a `.fis` file and emits `static const` MF/var/rule tables
+plus `fz_fis_<name>`. Names are sanitized to C identifiers, strings truncated to
+`FZ_NAME_LEN - 1` characters.
 
 ```sh
 python3 tools/fis2h.py model.fis -o model_fis.h           # writes model_fis.h
 python3 tools/fis2h.py model.fis --name tipper -o -       # stdout, custom symbol
 python3 tools/fis2h.py model.fis --points 201 -o m.h      # non-default n_points
+python3 tools/fis2h.py --selftest                         # encoding self-check
 ```
 
-Output compiles as C99 and C++11 with `-Wall -Wextra -Werror -pedantic`.
-Exit status is 1 and the message goes to stderr on a malformed file, so it can
-sit directly in a build rule. `python3 tools/fis2h.py --selftest` checks the rule
-slot encoding and name handling without needing a `.fis`; CI runs it first.
+Output compiles as C99 and C++11 under `-Wall -Wextra -Werror -pedantic`. Exit
+status is 1 with the message on stderr for a malformed file, so it drops straight
+into a build rule.
 
-## Layout
+---
+
+## Repository layout
 
 ```
-src/            fz.h umbrella + fz_types.h, fz_mf, fz_ops, fz_defuzz, fz_eval, fz_fis_parse
-tools/          fis2h.py (codegen), fis2json.py, check_parity.py, oracle.m
-examples/       tipper_mamdani, tipper_sugeno (runtime), generated_static (codegen)
-tests/          host assert suite + .fis fixtures
-docs/           COMPATIBILITY.md, MATLAB-VERIFY.md
-tools/          fis2h.py (codegen), fis2json.py (Python reference),
-                check_parity.py (C vs reference), oracle.m, patch-oracle.sh
-tests/golden/   13 real fixtures + oracle output; tests/host/ six test binaries
+src/              the library — 6 translation units, no dependencies
+  fz_types.h      static FIS model, rule-slot encoding
+  fz_mf.c         13 membership functions, hedges, NOT
+  fz_ops.c        t-norms and s-norms
+  fz_defuzz.c     7 defuzzification methods
+  fz_eval.c       Mamdani + Sugeno evaluator
+  fz_fis_parse.c  .fis reader (opt-in)
+examples/         generated_static, tipper_mamdani, tipper_sugeno
+tools/            fis2h.py, fis2json.py, check_parity.py, oracle.m, patch-oracle.sh
+tests/golden/     14 reference systems + oracle output
+tests/host/       6 test binaries, `make -C tests/host run`
+docs/             COMPATIBILITY.md, MATLAB-VERIFY.md
+CONTRACT.md       the normative spec the implementation is written against
 ```
 
-## Limits
+---
 
-AVR: prefer generated headers; each `fz_work_t` is 404 bytes at 101 points, so
-keep it static and reuse it. The parser needs pools on top of that. No type-2
-FIS, no ANFIS training, no GUI — see the contract's non-goals.
+## Verifying it yourself
+
+The host suite needs only a C compiler:
+
+```sh
+make -C tests/host run          # 18 checks, no framework, no network
+```
+
+Memory safety:
+
+```sh
+make -C tests/host clean
+make -C tests/host CFLAGS="-std=c11 -Wall -Wextra -O1 -g \
+  -fsanitize=address,undefined -I$PWD/src" run
+```
+
+Numerical parity against the reference, per system:
+
+```sh
+python3 tools/check_parity.py \
+  --fis tests/golden/mamdani_tip_calculator.fis \
+  --inputs tests/golden/mamdani_tip_calculator.in.txt
+```
+
+To reproduce the oracle itself, or to re-run the same check in **real MATLAB**,
+follow [`docs/MATLAB-VERIFY.md`](docs/MATLAB-VERIFY.md).
+
+---
+
+## Compatibility notes
+
+Parity is measured against MATLAB semantics, which in six places differ from the
+popular `fuzzy-logic-toolkit`: degenerate `trapmf` shoulders are legal,
+`bisector` returns an x value rather than an array index, Sugeno always
+aggregates by sum, `einstein_product` folds from the identity, `probor` actually
+exists, and an empty aggregate yields the range midpoint instead of aborting. All
+six are documented in [`docs/COMPATIBILITY.md`](docs/COMPATIBILITY.md) §3.
+
+One known, declared limitation: **`bisector` is grid-quantised.** It resolves on
+the sample grid, so two conforming implementations can differ by at most one grid
+step. That is a property of the algorithm MATLAB defines, not drift.
+
+**Not implemented:** type-2 FIS, ANFIS/`genfis` training, the Fuzzy Logic
+Designer GUI, Simulink blocks, custom function-handle MFs, runtime mutation
+(`addvar`/`addrule`).
+
+---
 
 ## License
 
-MIT.
+MIT — see [LICENSE](LICENSE).

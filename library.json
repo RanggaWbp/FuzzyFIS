@@ -1,14 +1,14 @@
 {
-  "name": "fz",
+  "name": "FuzzyFIS",
   "version": "0.1.0",
-  "description": "MATLAB-compatible fuzzy inference (Mamdani and Sugeno) for microcontrollers. Deterministic float32, no heap, no exceptions; static FIS tables or runtime .fis parsing.",
+  "description": "MATLAB-compatible fuzzy inference (Mamdani and Sugeno) for microcontrollers. Zero heap, no exceptions, float32.",
   "keywords": [
     "fuzzy",
     "fuzzy-logic",
-    "fis",
     "mamdani",
     "sugeno",
-    "control"
+    "fis",
+    "matlab"
   ],
   "license": "MIT",
   "frameworks": "*",
@@ -27,5 +27,16 @@
       "docs",
       ".github"
     ]
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/RanggaWbp/FuzzyFIS.git"
+  },
+  "homepage": "https://github.com/RanggaWbp/FuzzyFIS",
+  "authors": [
+    {
+      "name": "RanggaWbp",
+      "maintainer": true
+    }
+  ]
 }
