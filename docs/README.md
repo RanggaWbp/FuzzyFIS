@@ -64,3 +64,18 @@ bugs while this was built, both worth repeating after a model change:
 #    zero at both range ends returns the midpoint silently (centroid of an empty
 #    set), which hides a modelling error behind a plausible number.
 ```
+
+## Rebuilding the oracle
+
+The reference toolkit deviates from MATLAB in four places (see
+`COMPATIBILITY.md` §3). Golden data must come from a patched copy, never from
+the stock toolkit:
+
+```sh
+git clone --depth 1 https://github.com/lmarkowsky/fuzzy-logic-toolkit.git /var/tmp/flt-src
+tools/patch-oracle.sh                 # /var/tmp/flt-src/inst -> /var/tmp/flt-oracle/inst
+tools/run_oracle.sh tests/golden/hedges.fis tests/golden/hedges.in.txt 101 /tmp/out.csv
+```
+
+`tools/oracle.m` and `tools/run_oracle.sh` default to the patched path, so a
+regeneration cannot silently pick up the unpatched toolkit.

@@ -138,6 +138,9 @@ tools/          fis2h.py (codegen), fis2json.py, check_parity.py, oracle.m
 examples/       tipper_mamdani, tipper_sugeno (runtime), generated_static (codegen)
 tests/          host assert suite + .fis fixtures
 docs/           COMPATIBILITY.md, MATLAB-VERIFY.md
+tools/          fis2h.py (codegen), fis2json.py (Python reference),
+                check_parity.py (C vs reference), oracle.m, patch-oracle.sh
+tests/golden/   13 real fixtures + oracle output; tests/host/ six test binaries
 ```
 
 ## Limits
